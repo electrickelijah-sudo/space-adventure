@@ -222,6 +222,10 @@
 <div id="finishLine">FINISH</div>
 <div id="landPrompt" style="position:fixed;bottom:80px;left:50%;transform:translateX(-50%);color:#0f0;font-size:18px;font-family:'Courier New',monospace;z-index:15;text-shadow:0 0 15px rgba(0,255,0,0.5);display:none;letter-spacing:2px;pointer-events:none">🪐 PRESS SPACE TO LAND</div>
 <div id="sBucksDisplay">🪙 S Bucks: 0</div>
+<div id="playerHPBar" style="position:fixed;bottom:30px;left:50%;transform:translateX(-50%);width:200px;height:8px;background:rgba(0,0,0,0.5);border-radius:4px;z-index:10;border:1px solid rgba(0,255,255,0.3);overflow:hidden;pointer-events:none">
+  <div id="playerHPFill" style="height:100%;width:100%;background:linear-gradient(90deg,#0ff,#0f0);border-radius:3px;transition:width 0.1s"></div>
+</div>
+<div id="crosshair" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#0ff;font-size:24px;z-index:10;pointer-events:none;opacity:0.5;text-shadow:0 0 8px rgba(0,255,255,0.5)">✚</div>
 <button id="shopBtn">SHOP</button>
 <div id="shopOverlay"><div id="shopPanel"></div></div>
 
@@ -248,14 +252,28 @@ document.addEventListener('DOMContentLoaded', () => {
   sun.intensity = 0.6
   sun.diffuse = new BABYLON.Color3(0.8, 0.85, 1)
 
-  // Post-processing: bloom + HDR-like tone mapping via DefaultRenderingPipeline
+  // Post-processing: cinematic pipeline
   const pipeline = new BABYLON.DefaultRenderingPipeline('default', false, scene)
   pipeline.bloomEnabled = true
-  pipeline.bloomThreshold = 0.25
-  pipeline.bloomScale = 0.8
+  pipeline.bloomThreshold = 0.2
+  pipeline.bloomScale = 1.0
   pipeline.bloomKernel = 64
   scene.imageProcessingConfiguration.toneMappingEnabled = true
   scene.imageProcessingConfiguration.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_ACES
+  scene.imageProcessingConfiguration.vignetteEnabled = true
+  scene.imageProcessingConfiguration.vignetteWeight = 0.4
+
+  // Film grain
+  const grain = new BABYLON.FilmPostProcess('grain', 0.3, 0.6, 1.0, camera)
+  setTimeout(() => { grain.enabled = true }, 100)
+
+  // Simple lens flare using bright glow sprite
+  const flareMat = new BABYLON.StandardMaterial('flareMat', scene)
+  flareMat.emissiveColor = new BABYLON.Color3(1, 0.85, 0.5)
+  flareMat.disableLighting = true; flareMat.alpha = 0.08
+  const flare = BABYLON.MeshBuilder.CreateSphere('lensFlare', { diameter: 2 }, scene)
+  flare.position = new BABYLON.Vector3(200, 100, -600)
+  flare.material = flareMat
 
   // Secondary rim light for depth
   const rimLight = new BABYLON.DirectionalLight('rim', new BABYLON.Vector3(-1, 0.3, 1), scene)
@@ -427,9 +445,10 @@ document.addEventListener('DOMContentLoaded', () => {
         (Math.random() - 0.5) * 80, (Math.random() - 0.5) * 60, z
       )
       ast.rotation = new BABYLON.Vector3(Math.random() * 6, Math.random() * 6, Math.random() * 6)
-      const am = new BABYLON.StandardMaterial('am' + i, scene)
+      const am = new BABYLON.PBRMaterial('am' + i, scene)
       const c = astColors[i % astColors.length]
-      am.diffuseColor = c
+      am.albedoColor = c; am.metallic = 0.1; am.roughness = 0.9
+      am.emissiveColor = c.scale(0.1); am.emissiveIntensity = 0.2
       am.emissiveColor = c.scale(0.15)
       am.specularColor = new BABYLON.Color3(0.05, 0.03, 0.01)
       ast.material = am
@@ -616,17 +635,68 @@ document.addEventListener('DOMContentLoaded', () => {
       ep.material = eMat
     }
 
-    // Distant massive planets
-    const planMat = new BABYLON.StandardMaterial('planMat', scene)
-    planMat.diffuseColor = new BABYLON.Color3(0.1, 0.05, 0.2)
-    planMat.emissiveColor = new BABYLON.Color3(0.02, 0.01, 0.05)
-    for (let i = 0; i < 3; i++) {
-      const p = BABYLON.MeshBuilder.CreateSphere('planet' + i, { diameter: 30 + Math.random() * 20 }, scene)
-      p.position = new BABYLON.Vector3(
-        (Math.random() - 0.5) * 200, (Math.random() - 0.5) * 150, 1900 + Math.random() * 200
+    // Massive cinematic planet (visible from start zone)
+    const bigPlanetMat = new BABYLON.PBRMaterial('bigPlanetMat', scene)
+    bigPlanetMat.albedoColor = new BABYLON.Color3(0.15, 0.08, 0.3)
+    bigPlanetMat.metallic = 0.2; bigPlanetMat.roughness = 0.8
+    bigPlanetMat.emissiveColor = new BABYLON.Color3(0.03, 0.01, 0.06); bigPlanetMat.emissiveIntensity = 0.3
+    const bigPlanet = BABYLON.MeshBuilder.CreateSphere('bigPlanet', { diameter: 120 }, scene)
+    bigPlanet.position = new BABYLON.Vector3(-80, -30, 1950)
+    bigPlanet.material = bigPlanetMat
+
+    // Animated storm cells on the planet (glowing emissive dots)
+    const stormMat = new BABYLON.StandardMaterial('stormMat', scene)
+    stormMat.emissiveColor = new BABYLON.Color3(0.8, 0.3, 0.1); stormMat.disableLighting = true; stormMat.alpha = 0.5
+    const storms = []
+    for (let i = 0; i < 20; i++) {
+      const theta = Math.random() * Math.PI * 2
+      const phi = Math.acos(2 * Math.random() - 1)
+      const r = 60
+      const s = BABYLON.MeshBuilder.CreateSphere('storm' + i, { diameter: 1 + Math.random() * 3 }, scene)
+      s.position = new BABYLON.Vector3(
+        -80 + r * Math.sin(phi) * Math.cos(theta),
+        -30 + r * Math.cos(phi),
+        1950 + r * Math.sin(phi) * Math.sin(theta)
       )
-      p.material = planMat
+      s.material = stormMat
+      storms.push({ mesh: s, theta, phi, drift: (Math.random() - 0.5) * 0.3 })
     }
+
+    // Atmosphere glow
+    const atmosMat = new BABYLON.StandardMaterial('atmosMat', scene)
+    atmosMat.emissiveColor = new BABYLON.Color3(0.2, 0.1, 0.5); atmosMat.alpha = 0.1
+    atmosMat.backFaceCulling = false; atmosMat.disableLighting = true
+    const atmos = BABYLON.MeshBuilder.CreateSphere('atmos', { diameter: 140 }, scene)
+    atmos.position = bigPlanet.position.clone()
+    atmos.material = atmosMat
+
+    // Ringed planet in the distance
+    const ringPlanetMat = new BABYLON.PBRMaterial('ringPlanetMat', scene)
+    ringPlanetMat.albedoColor = new BABYLON.Color3(0.3, 0.2, 0.1)
+    ringPlanetMat.metallic = 0.1; ringPlanetMat.roughness = 0.9
+    const ringPlanet = BABYLON.MeshBuilder.CreateSphere('ringPlanet', { diameter: 40 }, scene)
+    ringPlanet.position = new BABYLON.Vector3(100, 30, 1800)
+    ringPlanet.material = ringPlanetMat
+    // Its rings
+    const ringRingMat = new BABYLON.StandardMaterial('ringRingMat', scene)
+    ringRingMat.diffuseColor = new BABYLON.Color3(0.4, 0.3, 0.15); ringRingMat.alpha = 0.25
+    ringRingMat.backFaceCulling = false; ringRingMat.emissiveColor = new BABYLON.Color3(0.1, 0.08, 0.04)
+    const ringRing = BABYLON.MeshBuilder.CreateTorus('ringRing', { diameter: 80, thickness: 1.5 }, scene)
+    ringRing.position = ringPlanet.position.clone()
+    ringRing.rotation.x = 0.8; ringRing.rotation.z = 0.4
+    ringRing.material = ringRingMat
+
+    // Storm animation in main loop
+    scene.registerBeforeRender(function stormAnim() {
+      storms.forEach((st, i) => {
+        st.theta += delta * st.drift * 0.3
+        const r2 = 60
+        st.mesh.position.x = -80 + r2 * Math.sin(st.theta) * Math.cos(st.phi)
+        st.mesh.position.z = 1950 + r2 * Math.sin(st.theta) * Math.sin(st.phi)
+        const pulse = 0.5 + Math.sin(animTime * 2 + i) * 0.5
+        st.mesh.scaling = new BABYLON.Vector3(pulse, pulse, pulse)
+      })
+    })
   }
 
   // === FINISH LINE (3D marker at z=2200) ===
@@ -642,6 +712,34 @@ document.addEventListener('DOMContentLoaded', () => {
     ring.rotation.z = i * Math.PI / 4
     ring.material = finishMat
   }
+
+  // === FLYING ENEMY SHIPS ===
+  function generateEnemyShips() {
+    const eMat = new BABYLON.StandardMaterial('enemyMat', scene)
+    eMat.diffuseColor = new BABYLON.Color3(0.6, 0.05, 0.05); eMat.emissiveColor = new BABYLON.Color3(0.3, 0.02, 0.02)
+    const eGlow = new BABYLON.StandardMaterial('enemyGlow', scene)
+    eGlow.emissiveColor = new BABYLON.Color3(1, 0.2, 0.1); eGlow.disableLighting = true
+    for (let i = 0; i < 8; i++) {
+      const root = new BABYLON.TransformNode('enemy' + i)
+      const z = 400 + Math.random() * 1400
+      root.position = new BABYLON.Vector3((Math.random() - 0.5) * 60, 1 + Math.random() * 8, z)
+      root.rotation.y = Math.PI
+      const body = BABYLON.MeshBuilder.CreateCylinder('eb' + i, { height: 1.2, diameterTop: 0.05, diameterBottom: 0.3 }, scene)
+      body.parent = root; body.rotation.x = Math.PI / 2; body.material = eMat
+      for (const s of [-1, 1]) {
+        const w = BABYLON.MeshBuilder.CreateBox('ew' + i + '_' + s, { width: 0.05, height: 0.03, depth: 0.5 }, scene)
+        w.parent = root; w.position = new BABYLON.Vector3(s * 0.35, 0, 0); w.material = eMat
+        const eg = BABYLON.MeshBuilder.CreateSphere('eeg' + i + '_' + s, { diameter: 0.1 }, scene)
+        eg.parent = root; eg.position = new BABYLON.Vector3(s * 0.15, 0, 0.5); eg.material = eGlow
+      }
+      enemyShips.push({
+        root, baseZ: z, baseX: root.position.x, baseY: root.position.y,
+        phase: Math.random() * 6, speed: 3 + Math.random() * 4, alive: true,
+        hp: 3, shootTimer: 2 + Math.random() * 3,
+      })
+    }
+  }
+  generateEnemyShips()
 
   // === AI RACERS ===
   const aiShips = []
@@ -796,37 +894,64 @@ document.addEventListener('DOMContentLoaded', () => {
     const col = new BABYLON.Color3(cfg.c[0], cfg.c[1], cfg.c[2])
     const gCol = new BABYLON.Color3(cfg.g[0], cfg.g[1], cfg.g[2])
 
-    const fusMat = new BABYLON.StandardMaterial('fusMat', scene)
-    fusMat.diffuseColor = col; fusMat.specularColor = col.scale(0.5); fusMat.specularPower = 15
+    // PBR fuselage
+    const fusMat = new BABYLON.PBRMaterial('fusMat', scene)
+    fusMat.albedoColor = col; fusMat.metallic = 0.7; fusMat.roughness = 0.25
+    fusMat.emissiveColor = col.scale(0.05); fusMat.emissiveIntensity = 0.3
     const fuse = BABYLON.MeshBuilder.CreateCylinder('fuse', { height: 3, diameterTop: 0.1, diameterBottom: 0.6 }, scene)
     fuse.parent = ship; fuse.position.y = 0; fuse.rotation.x = Math.PI / 2; fuse.material = fusMat
     shipParts.push(fuse)
 
-    const cockMat = new BABYLON.StandardMaterial('cockMat', scene)
-    cockMat.diffuseColor = new BABYLON.Color3(0.2, 0.3, 0.5); cockMat.alpha = 0.6
+    // Cocpit canopy (glass-like PBR)
+    const cockMat = new BABYLON.PBRMaterial('cockMat', scene)
+    cockMat.albedoColor = new BABYLON.Color3(0.15, 0.25, 0.4); cockMat.alpha = 0.5
+    cockMat.metallic = 0.1; cockMat.roughness = 0.05; cockMat.indexOfRefraction = 1.5
     const cock = BABYLON.MeshBuilder.CreateSphere('cockpit', { diameter: 0.5 }, scene)
     cock.parent = ship; cock.position = new BABYLON.Vector3(0, 0.2, -1)
     cock.scaling = new BABYLON.Vector3(0.8, 0.6, 0.8); cock.material = cockMat
     shipParts.push(cock)
 
-    const wingMat = new BABYLON.StandardMaterial('wingMat', scene)
-    wingMat.diffuseColor = col.scale(0.85); wingMat.specularColor = col.scale(0.3)
+    // PBR wings
+    const wingMat = new BABYLON.PBRMaterial('wingMat', scene)
+    wingMat.albedoColor = col.scale(0.8); wingMat.metallic = 0.6; wingMat.roughness = 0.3
     for (const side of [-1, 1]) {
-      const w = BABYLON.MeshBuilder.CreateBox('wing' + side, { width: 0.1, height: 0.05, depth: 1.8 }, scene)
-      w.parent = ship; w.position = new BABYLON.Vector3(side * 0.8, -0.1, 0.3); w.material = wingMat
+      const w = BABYLON.MeshBuilder.CreateBox('wing' + side, { width: 0.08, height: 0.04, depth: 2 }, scene)
+      w.parent = ship; w.position = new BABYLON.Vector3(side * 0.8, -0.08, 0.4); w.material = wingMat
       shipParts.push(w)
     }
 
-    const engMat = new BABYLON.StandardMaterial('engMat', scene)
-    engMat.emissiveColor = gCol; engMat.disableLighting = true
+    // Glowing engine nacelles (PBR emissive)
+    const engMat = new BABYLON.PBRMaterial('engMat', scene)
+    engMat.emissiveColor = gCol; engMat.emissiveIntensity = 2; engMat.albedoColor = gCol.scale(0.2)
     for (const side of [-1, 1]) {
       const e = BABYLON.MeshBuilder.CreateSphere('engine' + side, { diameter: 0.3 }, scene)
-      e.parent = ship; e.position = new BABYLON.Vector3(side * 0.35, -0.1, 1.5); e.material = engMat
+      e.parent = ship; e.position = new BABYLON.Vector3(side * 0.35, -0.08, 1.5); e.material = engMat
       shipParts.push(e)
     }
+
+    // Wingtip lights (blinking nav lights)
+    const navMat = new BABYLON.StandardMaterial('navMat', scene)
+    navMat.emissiveColor = new BABYLON.Color3(1, 0.1, 0.05); navMat.disableLighting = true
+    for (const side of [-1, 1]) {
+      const n = BABYLON.MeshBuilder.CreateSphere('navL' + side, { diameter: 0.08 }, scene)
+      n.parent = ship; n.position = new BABYLON.Vector3(side * 0.8, -0.12, 1.4); n.material = navMat
+      shipParts.push(n)
+    }
+
     shieldHP = cfg.ab === 'Shield' ? 1 : 0
   }
   buildShip(selectedShipId)
+
+  // Engine exhaust glow (animated spheres that follow ship)
+  const exhaustGlows = []
+  const exhMat = new BABYLON.StandardMaterial('exhMat', scene)
+  exhMat.emissiveColor = new BABYLON.Color3(0.3, 0.6, 1); exhMat.disableLighting = true; exhMat.alpha = 0.4
+  for (let i = 0; i < 6; i++) {
+    const g = BABYLON.MeshBuilder.CreateSphere('exh' + i, { diameter: 0.1 + Math.random() * 0.15 }, scene)
+    g.setEnabled(false); g.material = exhMat
+    exhaustGlows.push({ mesh: g, life: 0 })
+  }
+  let exhIdx = 0
 
   // Shield visual
   const shieldSphere = BABYLON.MeshBuilder.CreateSphere('shieldVis', { diameter: 1.8 }, scene)
@@ -908,6 +1033,16 @@ document.addEventListener('DOMContentLoaded', () => {
   let bossMaxHP = 20
   let bossAlive = false
   let bossProjectiles = []
+
+  // Combat system
+  let shootRequested = false
+  let laserCooldown = 0
+  const lasers = []
+  let playerHP = 100
+  let enemyShips = []
+
+  // Mouse shoot (only when pointer locked)
+  canvas.addEventListener('mousedown', () => { if (pointerLocked) shootRequested = true })
 
   // Storm system
   let stormTimer = 5 + Math.random() * 10
@@ -1217,6 +1352,139 @@ document.addEventListener('DOMContentLoaded', () => {
           (SHIPS.find(s => s.id === selectedShipId) || SHIPS[0]).g[2] * pulse
         )
         engMat2.emissiveColor = gCol2
+      }
+    }
+
+    // Engine exhaust glow trail
+    if (speed > 5 && racePhase === 'racing') {
+      const count = Math.min(3, Math.floor(speed / 15) + 1)
+      for (let i = 0; i < count; i++) {
+        const eg = exhaustGlows[exhIdx % exhaustGlows.length]
+        exhIdx++
+        eg.life = 0.3 + Math.random() * 0.2
+        eg.mesh.setEnabled(true)
+        eg.mesh.position = new BABYLON.Vector3(
+          ship.position.x + (Math.random() - 0.5) * 0.2,
+          ship.position.y - 0.1,
+          ship.position.z + 1.5
+        )
+        eg.mesh.scaling = new BABYLON.Vector3(1, 1, 1)
+      }
+    }
+    for (const eg of exhaustGlows) {
+      if (eg.life > 0) {
+        eg.life -= delta
+        eg.mesh.position.z += delta * 5
+        const a = Math.max(0, eg.life / 0.4)
+        eg.mesh.material.alpha = a * 0.5
+        eg.mesh.scaling.scaleInPlace(1 + delta * 3)
+      } else {
+        eg.mesh.setEnabled(false)
+      }
+    }
+
+    // Nav light blink
+    const navBlink = Math.sin(animTime * 4) > 0
+    if (shipParts.length > 3) {
+      const nav1 = shipParts[shipParts.length - 1]
+      const nav2 = shipParts[shipParts.length - 2]
+      if (nav1 && nav1.material) nav1.setEnabled(navBlink)
+      if (nav2 && nav2.material) nav2.setEnabled(!navBlink)
+    }
+
+    // === COMBAT SYSTEM ===
+    laserCooldown -= delta
+    if (shootRequested && laserCooldown <= 0 && racePhase === 'racing') {
+      laserCooldown = 0.2; shootRequested = false
+      const lMat = new BABYLON.StandardMaterial('laserMat', scene)
+      lMat.emissiveColor = new BABYLON.Color3(0, 0.8, 1); lMat.disableLighting = true
+      const l = BABYLON.MeshBuilder.CreateBox('laser' + lasers.length, { width: 0.04, height: 0.04, depth: 2 }, scene)
+      l.position = ship.position.clone()
+      l.position.z += 2
+      lasers.push({ mesh: l, life: 2, dmg: 1 })
+      // Laser sound
+      if (audioCtx) {
+        const o = audioCtx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = 1200
+        const g = audioCtx.createGain(); g.gain.value = 0.06
+        o.connect(g); g.connect(audioCtx.destination); o.start(); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08)
+      }
+    }
+
+    // Move lasers
+    for (let i = lasers.length - 1; i >= 0; i--) {
+      const l = lasers[i]
+      l.mesh.position.z += delta * 80
+      l.life -= delta
+      if (l.life <= 0) { l.mesh.dispose(); lasers.splice(i, 1); continue }
+      // Check hit on enemy ships
+      for (const es of enemyShips) {
+        if (!es.alive) continue
+        if (BABYLON.Vector3.Distance(l.mesh.position, es.root.position) < 2) {
+          es.hp--; l.mesh.dispose(); lasers.splice(i, 1); playCollect()
+          if (es.hp <= 0) { es.alive = false; es.root.setEnabled(false); score += 200; sBucks += 15; updateSBucks()
+            // Explosion
+            for (let j = 0; j < 8; j++) {
+              const exp = BABYLON.MeshBuilder.CreateSphere('exp' + i + '_' + j, { diameter: 0.15 }, scene)
+              exp.position = es.root.position.clone()
+              const em = new BABYLON.StandardMaterial('em', scene)
+              em.emissiveColor = new BABYLON.Color3(1, Math.random() * 0.5, 0); em.disableLighting = true
+              exp.material = em
+              setTimeout(() => { if (!exp.isDisposed()) exp.dispose() }, 500)
+            }
+          }
+          break
+        }
+      }
+      // Check hit on boss
+      if (bossAlive && bossRoot.isEnabled()) {
+        if (BABYLON.Vector3.Distance(l.mesh.position, bossRoot.position) < 4) {
+          bossHP--; l.mesh.dispose(); lasers.splice(i, 1)
+          document.getElementById('bossHpFill').style.width = (bossHP / bossMaxHP * 100) + '%'
+          if (bossHP <= 0) {
+            bossAlive = false; bossRoot.setEnabled(false)
+            document.getElementById('bossHpBar').style.display = 'none'
+            document.getElementById('bossLabel').style.display = 'none'
+            score += 500; sBucks += 100; updateSBucks(); playWinSound()
+            for (let j = 0; j < 30; j++) {
+              const exp = BABYLON.MeshBuilder.CreateSphere('expB' + j, { diameter: 0.3 }, scene)
+              exp.position = bossRoot.position.clone()
+              const em = new BABYLON.StandardMaterial('emB', scene)
+              em.emissiveColor = new BABYLON.Color3(1, Math.random() * 0.5, 0); em.disableLighting = true
+              exp.material = em
+              setTimeout(() => { if (!exp.isDisposed()) exp.dispose() }, 1000)
+            }
+          }
+        }
+      }
+    }
+
+    // Enemy AI
+    for (const es of enemyShips) {
+      if (!es.alive) continue
+      es.root.position.x = es.baseX + Math.sin(animTime * 0.5 + es.phase) * 6
+      es.root.position.y = es.baseY + Math.sin(animTime * 0.7 + es.phase * 2) * 2
+      es.root.position.z = es.baseZ + Math.sin(animTime * 0.3 + es.phase) * 5
+      es.root.rotation.y = Math.PI + Math.sin(animTime * 0.4 + es.phase) * 0.2
+      // Enemy shoot at player
+      es.shootTimer -= delta
+      if (es.shootTimer <= 0 && racePhase === 'racing') {
+        es.shootTimer = 2 + Math.random() * 2
+        const eMat = new BABYLON.StandardMaterial('eProjMat', scene)
+        eMat.emissiveColor = new BABYLON.Color3(1, 0.2, 0.1); eMat.disableLighting = true
+        const p = BABYLON.MeshBuilder.CreateSphere('eProj', { diameter: 0.2 }, scene)
+        p.position = es.root.position.clone()
+        const dir = ship.position.subtract(es.root.position).normalize()
+        const pLife = 3; const start = animTime
+        scene.registerBeforeRender(function eProjAnim() {
+          if (!p || p.isDisposed()) return
+          p.position.addInPlace(dir.scale(delta * 15))
+          if (animTime - start > pLife) { p.dispose(); const idx = scene.registerBeforeRender.funcs.indexOf(eProjAnim); if (idx >= 0) scene.registerBeforeRender.funcs.splice(idx, 1); return }
+          if (BABYLON.Vector3.Distance(p.position, ship.position) < 2) {
+            p.dispose(); playerHP -= 10; shakeAmount = 0.3; playCrash()
+            if (playerHP <= 0) { gameState = 'gameover'; gameOverMessage = 'DESTROYED IN COMBAT'; shakeAmount = 1.5; showGameOver() }
+            const idx = scene.registerBeforeRender.funcs.indexOf(eProjAnim); if (idx >= 0) scene.registerBeforeRender.funcs.splice(idx, 1)
+          }
+        })
       }
     }
 
@@ -1592,6 +1860,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Score display
     document.getElementById('scoreDisplay').textContent = 'SCORE: ' + score
 
+    // Player HP
+    document.getElementById('playerHPFill').style.width = Math.max(0, playerHP) + '%'
+
     // Highlight current zone on progress bar
     document.querySelectorAll('.region-label').forEach((el, i) => {
       el.classList.toggle('active', i === currentZone)
@@ -1908,10 +2179,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Boss at anomaly
-  const bossMat = new BABYLON.StandardMaterial('bossMat', scene)
-  bossMat.emissiveColor = new BABYLON.Color3(0.8, 0.1, 0.2)
-  bossMat.diffuseColor = new BABYLON.Color3(0.4, 0.05, 0.1)
-  bossMat.disableLighting = true
+  const bossMat = new BABYLON.PBRMaterial('bossMat', scene)
+  bossMat.emissiveColor = new BABYLON.Color3(0.8, 0.1, 0.2); bossMat.emissiveIntensity = 1.5
+  bossMat.albedoColor = new BABYLON.Color3(0.4, 0.05, 0.1); bossMat.metallic = 0.8; bossMat.roughness = 0.3
   const bossRoot = new BABYLON.TransformNode('boss')
   bossRoot.position = new BABYLON.Vector3(0, 5, 1950)
   const bossCore = BABYLON.MeshBuilder.CreateSphere('bossCore', { diameter: 3 }, scene)
