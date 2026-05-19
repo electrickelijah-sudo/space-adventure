@@ -220,6 +220,7 @@
 <div id="gameOverlay"></div>
 <div id="leaderboard"><div class="lb-title">STANDINGS</div></div>
 <div id="finishLine">FINISH</div>
+<div id="landPrompt" style="position:fixed;bottom:80px;left:50%;transform:translateX(-50%);color:#0f0;font-size:18px;font-family:'Courier New',monospace;z-index:15;text-shadow:0 0 15px rgba(0,255,0,0.5);display:none;letter-spacing:2px;pointer-events:none">🪐 PRESS SPACE TO LAND</div>
 <div id="sBucksDisplay">🪙 S Bucks: 0</div>
 <button id="shopBtn">SHOP</button>
 <div id="shopOverlay"><div id="shopPanel"></div></div>
@@ -246,6 +247,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const sun = new BABYLON.DirectionalLight('sun', new BABYLON.Vector3(1, -0.5, -2), scene)
   sun.intensity = 0.6
   sun.diffuse = new BABYLON.Color3(0.8, 0.85, 1)
+
+  // Post-processing: bloom + HDR-like tone mapping
+  scene.imageProcessingConfiguration.bloomEnabled = true
+  scene.imageProcessingConfiguration.bloomThreshold = 0.35
+  scene.imageProcessingConfiguration.bloomScale = 0.7
+  scene.imageProcessingConfiguration.bloomKernel = 64
+  scene.imageProcessingConfiguration.toneMappingEnabled = true
+  scene.imageProcessingConfiguration.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_ACES
+
+  // Secondary rim light for depth
+  const rimLight = new BABYLON.DirectionalLight('rim', new BABYLON.Vector3(-1, 0.3, 1), scene)
+  rimLight.intensity = 0.35
+  rimLight.diffuse = new BABYLON.Color3(0.2, 0.3, 0.8)
 
   // === ZONES ===
   const ZONES = [
@@ -846,6 +860,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   })
 
+  // === GAMEPAD CONTROLLER SUPPORT ===
+  function pollGamepad() {
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : []
+    for (const gp of gamepads) {
+      if (!gp) continue
+      const ly = gp.axes[1]
+      const lx = gp.axes[0]
+      const rx = gp.axes[2]
+      const ry = gp.axes[3]
+      if (ly < -0.25) keys['w'] = true; else if (ly > 0.1) keys['w'] = false
+      if (ly > 0.25) keys['s'] = true; else if (ly < -0.1) keys['s'] = false
+      if (lx < -0.25) keys['a'] = true; else if (lx > -0.1) keys['a'] = false
+      if (lx > 0.25) keys['d'] = true; else if (lx < 0.1) keys['d'] = false
+      const aBtn = gp.buttons[0] && gp.buttons[0].pressed
+      const bBtn = gp.buttons[1] && gp.buttons[1].pressed
+      if (aBtn) keys[' '] = true; else keys[' '] = false
+      if (bBtn) keys['shift'] = true; else keys['shift'] = false
+      if (Math.abs(rx) > 0.1) mouseX += rx * 0.02
+      if (Math.abs(ry) > 0.1) mouseY += ry * 0.015
+    }
+  }
+
   // === GAME STATE ===
   let speed = 0
   const maxSpeed = 60
@@ -916,6 +952,119 @@ document.addEventListener('DOMContentLoaded', () => {
   scene.registerBeforeRender(() => {
     const delta = Math.min(engine.getDeltaTime() / 1000, 0.05)
     animTime += delta
+    pollGamepad()
+
+    // === LANDING ZONE PROXIMITY (while flying) ===
+    if (gameMode === 'flying' && racePhase === 'racing') {
+      let nearLZ = -1
+      for (let i = 0; i < landingZones.length; i++) {
+        const lz = landingZones[i]
+        const d = BABYLON.Vector3.Distance(ship.position, new BABYLON.Vector3(lz.x, lz.y, lz.z))
+        if (d < lz.size + 8) { nearLZ = i; break }
+      }
+      if (nearLZ >= 0) {
+        landPromptEl.style.display = 'block'
+        if (keys[' ']) { landOnPlanet(nearLZ); return }
+      } else {
+        landPromptEl.style.display = 'none'
+      }
+    }
+
+    // === LANDED MODE ===
+    if (gameMode === 'landed') {
+      if (!characterRoot) return
+      const fwd = keys['w'], rev = keys['s'], left = keys['a'], right = keys['d']
+      const space2 = keys[' ']
+      let moveX = 0, moveZ = 0
+      if (fwd) moveZ = -1; if (rev) moveZ = 1
+      if (left) moveX = -1; if (right) moveX = 1
+      const spd = 5 * delta
+      characterRoot.position.x += moveX * spd
+      characterRoot.position.z += moveZ * spd
+      // Gravity (keep on surface)
+      const lz2 = landingZones[landedPlanetIndex]
+      if (lz2) characterRoot.position.y = lz2.y - lz2.size + 1
+      // Jump / Launch
+      if (space2) {
+        launchFromPlanet()
+        return
+      }
+      // Rotate to face movement direction
+      if (moveX !== 0 || moveZ !== 0) {
+        const targetAngle = Math.atan2(moveX, moveZ)
+        characterRoot.rotation.y += (targetAngle - characterRoot.rotation.y) * 0.1
+        // Bob animation
+        const bob = Math.sin(animTime * 8) * 0.02
+        characterRoot.position.y += bob
+      }
+      // Camera follow character
+      if (characterRoot) {
+        const cPos = characterRoot.position
+        camera.position = BABYLON.Vector3.Lerp(camera.position, new BABYLON.Vector3(cPos.x + 3, cPos.y + 2.5, cPos.z + 4), 0.06)
+        camera.setTarget(new BABYLON.Vector3(cPos.x, cPos.y + 0.5, cPos.z))
+      }
+      // Player shoot
+      playerShootCooldown -= delta
+      if (pointerLocked && playerShootCooldown <= 0) {
+        playerShootCooldown = 0.3
+        const pMat2 = new BABYLON.StandardMaterial('pshotMat', scene)
+        pMat2.emissiveColor = new BABYLON.Color3(0, 0.8, 1); pMat2.disableLighting = true
+        const shoot = BABYLON.MeshBuilder.CreateSphere('pShot', { diameter: 0.15 }, scene)
+        shoot.position = characterRoot.position.clone()
+        const dir = new BABYLON.Vector3(-mouseX, -mouseY * 0.3, -1).normalize()
+        const life = 1.5; const start = animTime
+        scene.registerBeforeRender(function shotAnim() {
+          shoot.position.addInPlace(dir.scale(delta * 20))
+          if (animTime - start > life) { shoot.dispose(); const idx = scene.registerBeforeRender.funcs.indexOf(shotAnim); if (idx >= 0) scene.registerBeforeRender.funcs.splice(idx, 1); return }
+          // Check hit
+          for (const al of aliens) {
+            if (!al.alive) continue
+            if (BABYLON.Vector3.Distance(shoot.position, al.mesh.position) < 1.2) {
+              al.health--
+              al.mesh.scaling = new BABYLON.Vector3(1.3, 1.3, 1.3)
+              setTimeout(() => { if (al.mesh) al.mesh.scaling = new BABYLON.Vector3(1, 1, 1) }, 100)
+              if (al.health <= 0) { al.alive = false; al.mesh.setEnabled(false); score += 100; sBucks += 10; updateSBucks(); playCollect() }
+              shoot.dispose(); const idx = scene.registerBeforeRender.funcs.indexOf(shotAnim); if (idx >= 0) scene.registerBeforeRender.funcs.splice(idx, 1)
+            }
+          }
+        })
+      }
+      // Alien AI
+      for (const al of aliens) {
+        if (!al.alive) continue
+        const wander = Math.sin(animTime * 0.5 + al.phase) * al.patrolR
+        al.mesh.position.x = al.basePos.x + wander
+        al.mesh.position.z = al.basePos.z + Math.cos(animTime * 0.4 + al.phase * 2) * al.patrolR * 0.7
+        al.mesh.rotation.y += delta * 1.5
+        // Alien shoot at player
+        al.shootTimer -= delta
+        if (al.shootTimer <= 0 && characterRoot) {
+          al.shootTimer = 2 + Math.random()
+          const am = new BABYLON.StandardMaterial('alProjMat', scene)
+          am.emissiveColor = new BABYLON.Color3(1, 0.2, 0.1); am.disableLighting = true
+          const proj = BABYLON.MeshBuilder.CreateSphere('alProj', { diameter: 0.2 }, scene)
+          proj.position = al.mesh.position.clone()
+          const aDir = characterRoot.position.subtract(al.mesh.position).normalize()
+          const pLife = 2.5; const pStart = animTime
+          scene.registerBeforeRender(function alProjAnim() {
+            if (!proj || proj.isDisposed()) return
+            proj.position.addInPlace(aDir.scale(delta * 12))
+            if (animTime - pStart > pLife) { proj.dispose(); const idx = scene.registerBeforeRender.funcs.indexOf(alProjAnim); if (idx >= 0) scene.registerBeforeRender.funcs.splice(idx, 1); return }
+            if (characterRoot && BABYLON.Vector3.Distance(proj.position, characterRoot.position) < 1.5) {
+              playerHealth -= 15; proj.dispose()
+              shakeAmount = 0.4
+              const idx = scene.registerBeforeRender.funcs.indexOf(alProjAnim); if (idx >= 0) scene.registerBeforeRender.funcs.splice(idx, 1)
+              if (playerHealth <= 0) {
+                const lz3 = landingZones[landedPlanetIndex]
+                if (lz3) { launchFromPlanet(); ship.position.z = lz3.z - 20; gameState = 'gameover'; gameOverMessage = 'DEFEATED ON ' + lz3.name; showGameOver() }
+              }
+            }
+          })
+        }
+      }
+      updateLeaderboard()
+      return
+    }
 
     // === COUNTDOWN PHASE ===
     if (racePhase === 'countdown') {
@@ -1780,6 +1929,120 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   bossRoot.setEnabled(false)
   bossHP = bossMaxHP
+
+  // === PLANET LANDING SYSTEM ===
+  let gameMode = 'flying'
+  let landedPlanetIndex = -1
+  let characterRoot = null
+  let characterParts = []
+  let aliens = []
+  let alienProjectiles = []
+  let playerHealth = 100
+  let playerShootCooldown = 0
+  let charVX = 0, charVY = 0
+  let landPromptEl = document.getElementById('landPrompt')
+
+  const landingZones = [
+    { name: 'PROXIMA B', z: 500, x: 22, y: -5, color: new BABYLON.Color3(0.2, 0.4, 0.8), size: 20 },
+    { name: 'KEPLER-7', z: 1000, x: -28, y: -3, color: new BABYLON.Color3(0.8, 0.3, 0.15), size: 25 },
+    { name: 'ATHENA PRIME', z: 2000, x: 35, y: -8, color: new BABYLON.Color3(0.1, 0.6, 0.4), size: 30 },
+  ]
+
+  function createLandingZones() {
+    for (const lz of landingZones) {
+      const pMat = new BABYLON.StandardMaterial('lzPMat_' + lz.name, scene)
+      pMat.diffuseColor = lz.color; pMat.specularColor = lz.color.scale(0.2); pMat.specularPower = 25
+      pMat.emissiveColor = new BABYLON.Color3(0.01, 0.01, 0.02)
+      const planet = BABYLON.MeshBuilder.CreateSphere('lzPlanet_' + lz.name, { diameter: lz.size * 2 }, scene)
+      planet.position = new BABYLON.Vector3(lz.x, lz.y, lz.z); planet.material = pMat
+      lz.planetMesh = planet
+
+      const aMat = new BABYLON.StandardMaterial('lzAtmos_' + lz.name, scene)
+      aMat.emissiveColor = lz.color.scale(0.25); aMat.alpha = 0.12; aMat.backFaceCulling = false
+      aMat.disableLighting = true
+      const atmos = BABYLON.MeshBuilder.CreateSphere('lzAtmos_' + lz.name, { diameter: lz.size * 2.8 }, scene)
+      atmos.position = planet.position.clone(); atmos.material = aMat
+      lz.atmosMesh = atmos
+
+      const rMat = new BABYLON.StandardMaterial('lzRing_' + lz.name, scene)
+      rMat.emissiveColor = new BABYLON.Color3(0, 1, 0.4); rMat.alpha = 0.35; rMat.backFaceCulling = false
+      rMat.disableLighting = true
+      const ring = BABYLON.MeshBuilder.CreateTorus('lzMarker_' + lz.name, { diameter: 3.5, thickness: 0.15 }, scene)
+      ring.position = new BABYLON.Vector3(lz.x, lz.y - lz.size + 0.5, lz.z)
+      ring.rotation.x = Math.PI / 2; ring.material = rMat
+      lz.ringMesh = ring
+    }
+  }
+  createLandingZones()
+
+  function createCharacter() {
+    if (characterRoot) { characterParts.forEach(p => p.dispose()); characterParts = []; characterRoot.dispose() }
+    characterRoot = new BABYLON.TransformNode('charRoot')
+    const bMat = new BABYLON.StandardMaterial('charB', scene)
+    bMat.diffuseColor = new BABYLON.Color3(0.1, 0.3, 0.6); bMat.specularPower = 8
+    const hMat = new BABYLON.StandardMaterial('charH', scene)
+    hMat.diffuseColor = new BABYLON.Color3(0.8, 0.55, 0.35)
+    const body = BABYLON.MeshBuilder.CreateBox('charBody', { width: 0.35, height: 0.55, depth: 0.25 }, scene)
+    body.parent = characterRoot; body.position.y = 0.7; body.material = bMat; characterParts.push(body)
+    const head = BABYLON.MeshBuilder.CreateSphere('charHead', { diameter: 0.25 }, scene)
+    head.parent = characterRoot; head.position = new BABYLON.Vector3(0, 1.05, 0); head.material = hMat; characterParts.push(head)
+    for (const s of [-1, 1]) {
+      const arm = BABYLON.MeshBuilder.CreateBox('charArm' + s, { width: 0.06, height: 0.4, depth: 0.06 }, scene)
+      arm.parent = characterRoot; arm.position = new BABYLON.Vector3(s * 0.25, 0.85, 0); arm.material = bMat; characterParts.push(arm)
+      const leg = BABYLON.MeshBuilder.CreateBox('charLeg' + s, { width: 0.08, height: 0.45, depth: 0.08 }, scene)
+      leg.parent = characterRoot; leg.position = new BABYLON.Vector3(s * 0.12, 0.25, 0); leg.material = bMat; characterParts.push(leg)
+    }
+    // Visor glow
+    const visMat = new BABYLON.StandardMaterial('charVis', scene)
+    visMat.emissiveColor = new BABYLON.Color3(0, 0.6, 1); visMat.disableLighting = true
+    const visor = BABYLON.MeshBuilder.CreateSphere('charVisor', { diameter: 0.12 }, scene)
+    visor.parent = characterRoot; visor.position = new BABYLON.Vector3(0, 1.05, -0.13); visor.material = visMat; characterParts.push(visor)
+    characterRoot.setEnabled(false)
+  }
+
+  function createAliens(lz) {
+    aliens.forEach(a => { a.mesh.dispose() }); aliens = []; alienProjectiles.forEach(p => { p.mesh.dispose() }); alienProjectiles = []
+    for (let i = 0; i < 5; i++) {
+      const aMat = new BABYLON.StandardMaterial('alienM' + i, scene)
+      aMat.diffuseColor = new BABYLON.Color3(0.7, 0.1, 0.05); aMat.emissiveColor = new BABYLON.Color3(0.25, 0.04, 0.02)
+      aMat.disableLighting = true
+      const body = BABYLON.MeshBuilder.CreateSphere('alien' + i, { diameter: 0.5 }, scene)
+      body.position = new BABYLON.Vector3(lz.x + (Math.random() - 0.5) * 10, lz.y - lz.size + 0.4, lz.z + (Math.random() - 0.5) * 10)
+      body.material = aMat
+      const eMat = new BABYLON.StandardMaterial('alienEye' + i, scene)
+      eMat.emissiveColor = new BABYLON.Color3(1, 0.9, 0); eMat.disableLighting = true
+      for (const s of [-1, 1]) {
+        const eye = BABYLON.MeshBuilder.CreateSphere('ae' + i + '_' + s, { diameter: 0.1 }, scene)
+        eye.parent = body; eye.position = new BABYLON.Vector3(s * 0.12, 0.08, -0.25); eye.material = eMat
+      }
+      aliens.push({
+        mesh: body, health: 3, maxHealth: 3, phase: Math.random() * 6,
+        basePos: body.position.clone(), shootTimer: 1 + Math.random() * 2,
+        patrolR: 2 + Math.random() * 3, alive: true,
+      })
+    }
+  }
+
+  function landOnPlanet(index) {
+    const lz = landingZones[index]; if (!lz) return
+    landedPlanetIndex = index; gameMode = 'landed'
+    keys[' '] = false
+    createCharacter(); characterRoot.setEnabled(true)
+    characterRoot.position = new BABYLON.Vector3(lz.x, lz.y - lz.size + 1, lz.z + 4)
+    ship.setEnabled(false); shieldSphere.isVisible = false
+    createAliens(lz); playerHealth = 100; landPromptEl.style.display = 'none'
+    document.getElementById('gameOverlay').innerHTML = '<div style="position:fixed;top:10px;left:50%;transform:translateX(-50%);color:#0ff;font-size:15px;z-index:20;font-family:Courier New,monospace;text-shadow:0 0 10px rgba(0,255,255,0.5)">🌍 ' + lz.name + ' · WASD MOVE · CLICK SHOOT · SPACE LAUNCH</div>'
+    document.getElementById('gameOverlay').style.display = 'block'
+  }
+
+  function launchFromPlanet() {
+    const lz = landingZones[landedPlanetIndex]; if (!lz) return
+    gameMode = 'flying'; keys[' '] = false; characterRoot.setEnabled(false)
+    ship.setEnabled(true); shieldSphere.isVisible = shieldHP > 0
+    ship.position = new BABYLON.Vector3(lz.x, lz.y + 8, lz.z - 12)
+    landedPlanetIndex = -1; landPromptEl.style.display = 'none'
+    document.getElementById('gameOverlay').style.display = 'none'; document.getElementById('gameOverlay').innerHTML = ''
+  }
 
   // === RENDER LOOP ===
   engine.runRenderLoop(() => scene.render())
