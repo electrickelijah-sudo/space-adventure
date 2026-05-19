@@ -799,6 +799,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // === MAIN LOOP ===
   scene.registerBeforeRender(() => {
     const delta = Math.min(engine.getDeltaTime() / 1000, 0.05)
+    animTime += delta
+
+    // === COUNTDOWN PHASE ===
+    if (racePhase === 'countdown') {
+      cdTimer += delta
+      if (cdTimer > 0.8) {
+        cdTimer = 0; cdStep++
+        if (cdStep === 1) cdEl.textContent = '— 2 —'
+        else if (cdStep === 2) cdEl.textContent = '— 1 —'
+        else if (cdStep === 3) { cdEl.textContent = '— GO! —'; initAudio(); setTimeout(() => cdEl.textContent = origCdText, 500) }
+        else if (cdStep >= 4) { racePhase = 'racing'; cdEl.textContent = origCdText }
+      }
+    }
 
     // === AI RACING (always updates, even after game over) ===
     aiShips.forEach((ai) => {
@@ -864,6 +877,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Mouse smoothing
     mouseX *= 0.9
+
+    // Engine sound
+    if (engineGain && audioCtx) {
+      const targetGain = Math.min(0.08, (speed / maxSpeed) * 0.08)
+      engineGain.gain.value += (targetGain - engineGain.gain.value) * 0.1
+      engineOsc.frequency.value = 60 + (speed / maxSpeed) * 120
+    }
+
+    // Engine glow pulse
+    if (shipParts.length > 0) {
+      const engMat2 = shipParts[shipParts.length - 1].material
+      if (engMat2 && engMat2.emissiveColor) {
+        const pulse = 0.5 + Math.sin(animTime * 8 + speed * 0.05) * 0.3 + (speed / maxSpeed) * 0.4
+        const gCol2 = new BABYLON.Color3(
+          (SHIPS.find(s => s.id === selectedShipId) || SHIPS[0]).g[0] * pulse,
+          (SHIPS.find(s => s.id === selectedShipId) || SHIPS[0]).g[1] * pulse,
+          (SHIPS.find(s => s.id === selectedShipId) || SHIPS[0]).g[2] * pulse
+        )
+        engMat2.emissiveColor = gCol2
+      }
+    }
+
+    // Speed lines
+    const visSpeed = Math.max(0, (speed - 20) / maxSpeed)
+    if (visSpeed > 0 && racePhase === 'racing') {
+      for (let i = 0; i < 3; i++) {
+        const sl = speedLineMeshes[spdLineIdx % speedLineMeshes.length]
+        spdLineIdx++
+        sl.isVisible = true
+        sl.position = new BABYLON.Vector3(
+          ship.position.x + (Math.random() - 0.5) * 30,
+          ship.position.y + (Math.random() - 0.5) * 15,
+          ship.position.z - 5 - Math.random() * 20
+        )
+        sl.scaling = new BABYLON.Vector3(1, 1, 2 + visSpeed * 4)
+        spdLineMat.alpha = 0.05 + visSpeed * 0.15
+        setTimeout(() => { sl.isVisible = false }, 200)
+      }
+    }
     mouseY *= 0.92
 
     // === COLLISION DETECTION ===
@@ -872,14 +924,47 @@ document.addEventListener('DOMContentLoaded', () => {
       if (dist < obs.radius + 1.5 && Math.abs(ship.position.z - obs.mesh.position.z) < 8) {
         if (shieldHP > 0) {
           shieldHP--
+          shakeAmount = 0.5
           obs.mesh.position.y -= 20
+          playCrash()
           continue
         }
         gameState = 'gameover'
         gameOverMessage = 'CRASHED'
+        shakeAmount = 1.5
+        playCrash()
         ship.position.z = Math.max(0, ship.position.z - 5)
         showGameOver()
         break
+      }
+    }
+
+    // === ORB COLLECTION ===
+    if (racePhase === 'racing') {
+      for (let i = orbs.length - 1; i >= 0; i--) {
+        const o = orbs[i]
+        if (!o.isVisible) continue
+        const d = BABYLON.Vector3.Distance(ship.position, o.position)
+        if (d < 2.5) {
+          o.isVisible = false
+          o.position.y = -100
+          orbsCollected++
+          sBucks += 2
+          playCollect()
+          updateSBucks()
+        }
+      }
+    }
+
+    // === BOOST PADS ===
+    if (racePhase === 'racing') {
+      for (const bp of boostPads) {
+        const d = BABYLON.Vector3.Distance(ship.position, bp.position)
+        if (d < 2.5 && Math.abs(ship.position.z - bp.position.z) < 3) {
+          speed = Math.min(maxSpeed * 1.3, speed + 40)
+          bpMat.emissiveColor = new BABYLON.Color3(1, 1, 1)
+          setTimeout(() => { bpMat.emissiveColor = new BABYLON.Color3(0, 0.5, 1) }, 100)
+        }
       }
     }
 
@@ -889,6 +974,7 @@ document.addEventListener('DOMContentLoaded', () => {
       gameOverMessage = 'YOU WIN!'
       ship.position.z = TOTAL_LENGTH
       document.getElementById('finishLine').classList.add('show')
+      playWinSound()
       showWin()
     }
 
@@ -947,11 +1033,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // === CAMERA ===
     const camDist = 10 - Math.min(4, speed / maxSpeed * 3)
     const camHeight = 3 + Math.min(1, speed / maxSpeed * 0.5)
-    const camPos = new BABYLON.Vector3(
+    let camPos = new BABYLON.Vector3(
       ship.position.x * 0.3,
       ship.position.y + camHeight,
       ship.position.z - camDist
     )
+    // Screen shake
+    if (shakeAmount > 0) {
+      shakeOffset = new BABYLON.Vector3(
+        (Math.random() - 0.5) * shakeAmount,
+        (Math.random() - 0.5) * shakeAmount * 0.5,
+        (Math.random() - 0.5) * shakeAmount * 0.3
+      )
+      shakeAmount *= 0.9
+      if (shakeAmount < 0.01) shakeAmount = 0
+      camPos.addInPlace(shakeOffset)
+    }
     camera.position = BABYLON.Vector3.Lerp(camera.position, camPos, 0.06)
     camera.setTarget(new BABYLON.Vector3(
       ship.position.x * 0.6,
@@ -991,7 +1088,7 @@ document.addEventListener('DOMContentLoaded', () => {
     zoneNameEl.textContent = '— ' + zone.name + ' —'
     zoneDescEl.textContent = zoneDescs[currentZone] || ''
     const displaySpeed = Math.round(speed * 2)
-    speedDisplayEl.textContent = 'SPEED: ' + displaySpeed + (speed > maxSpeed * 0.9 ? ' ⚡ HYPERSPACE' : '')
+    speedDisplayEl.textContent = 'SPEED: ' + displaySpeed + (speed > maxSpeed * 0.9 ? ' ⚡ HYPERSPACE' : '') + '  ◆ ' + orbsCollected
     const progress = Math.min(100, (z / TOTAL_LENGTH) * 100)
     progressFillEl.style.width = progress + '%'
 
@@ -1130,6 +1227,128 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initial S Bucks display
   updateSBucks()
+
+  // === COOL STUFF ===
+
+  // Web Audio sound engine
+  const AudioCtx = window.AudioContext || window.webkitAudioContext
+  let audioCtx = null
+  let engineOsc = null
+  let engineGain = null
+  function initAudio() {
+    if (audioCtx) return
+    audioCtx = new AudioCtx()
+    engineOsc = audioCtx.createOscillator()
+    engineOsc.type = 'sawtooth'
+    engineGain = audioCtx.createGain()
+    engineGain.gain.value = 0
+    engineOsc.connect(engineGain)
+    engineGain.connect(audioCtx.destination)
+    engineOsc.start()
+  }
+  function playCrash() {
+    if (!audioCtx) return
+    const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.3, audioCtx.sampleRate)
+    const d = buf.getChannelData(0)
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.05))
+    const src = audioCtx.createBufferSource()
+    src.buffer = buf
+    const g = audioCtx.createGain()
+    g.gain.value = 0.3
+    src.connect(g)
+    g.connect(audioCtx.destination)
+    src.start()
+    setTimeout(() => { g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1) }, 0)
+  }
+  function playWinSound() {
+    if (!audioCtx) return
+    const notes = [523, 659, 784, 1047]
+    notes.forEach((freq, i) => {
+      const o = audioCtx.createOscillator()
+      o.type = 'square'
+      o.frequency.value = freq
+      const g = audioCtx.createGain()
+      g.gain.value = 0.15
+      o.connect(g)
+      g.connect(audioCtx.destination)
+      o.start(audioCtx.currentTime + i * 0.15)
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + i * 0.15 + 0.3)
+    })
+  }
+  function playCollect() {
+    if (!audioCtx) return
+    const o = audioCtx.createOscillator()
+    o.type = 'sine'
+    o.frequency.value = 880
+    const g = audioCtx.createGain()
+    g.gain.value = 0.1
+    o.connect(g)
+    g.connect(audioCtx.destination)
+    o.start()
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15)
+  }
+
+  // Speed lines
+  const speedLineMeshes = []
+  const spdLineMat = new BABYLON.StandardMaterial('spdLineMat', scene)
+  spdLineMat.emissiveColor = new BABYLON.Color3(0.3, 0.5, 1)
+  spdLineMat.alpha = 0.15
+  spdLineMat.disableLighting = true
+  for (let i = 0; i < 60; i++) {
+    const sl = BABYLON.MeshBuilder.CreateBox('spd' + i, { width: 0.03, height: 0.03, depth: 3 }, scene)
+    sl.material = spdLineMat
+    sl.isVisible = false
+    speedLineMeshes.push(sl)
+  }
+  let spdLineIdx = 0
+
+  // Collectible orbs
+  const orbs = []
+  const orbMat = new BABYLON.StandardMaterial('orbMat', scene)
+  orbMat.emissiveColor = new BABYLON.Color3(0, 1, 0.5)
+  orbMat.disableLighting = true
+  for (let i = 0; i < 80; i++) {
+    const o = BABYLON.MeshBuilder.CreateSphere('orb' + i, { diameter: 0.4 }, scene)
+    o.position = new BABYLON.Vector3(
+      (Math.random() - 0.5) * 50,
+      1.5 + Math.random() * 4,
+      50 + Math.random() * (TOTAL_LENGTH - 100)
+    )
+    o.material = orbMat
+    orbs.push(o)
+  }
+  let orbsCollected = 0
+
+  // Speed boost pads on the path
+  const boostPads = []
+  const bpMat = new BABYLON.StandardMaterial('bpMat', scene)
+  bpMat.emissiveColor = new BABYLON.Color3(0, 0.5, 1)
+  bpMat.diffuseColor = new BABYLON.Color3(0, 0.2, 0.4)
+  bpMat.disableLighting = true
+  for (let i = 0; i < 30; i++) {
+    const bp = BABYLON.MeshBuilder.CreateBox('bp' + i, { width: 2, height: 0.1, depth: 2 }, scene)
+    bp.position = new BABYLON.Vector3(
+      (Math.random() - 0.5) * 30,
+      0.05,
+      100 + (i / 30) * (TOTAL_LENGTH - 200)
+    )
+    bp.material = bpMat
+    boostPads.push(bp)
+  }
+
+  // Screen shake
+  let shakeAmount = 0
+  let shakeOffset = new BABYLON.Vector3(0, 0, 0)
+
+  // Start countdown
+  let racePhase = 'countdown'
+  let cdTimer = 0
+  let cdStep = 0
+  const cdEl = document.getElementById('zoneName')
+  const origCdText = cdEl.textContent
+
+  // Animated time
+  let animTime = 0
 
   // === RENDER LOOP ===
   engine.runRenderLoop(() => scene.render())
