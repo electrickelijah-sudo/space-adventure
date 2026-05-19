@@ -689,8 +689,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Storm animation in main loop
     scene.registerBeforeRender(function stormAnim() {
+      const sd = Math.min(engine.getDeltaTime() / 1000, 0.05)
       storms.forEach((st, i) => {
-        st.theta += delta * st.drift * 0.3
+        st.theta += sd * st.drift * 0.3
         const r2 = 60
         st.mesh.position.x = -80 + r2 * Math.sin(st.theta) * Math.cos(st.phi)
         st.mesh.position.z = 1950 + r2 * Math.sin(st.theta) * Math.sin(st.phi)
@@ -1161,10 +1162,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const shoot = BABYLON.MeshBuilder.CreateSphere('pShot', { diameter: 0.15 }, scene)
         shoot.position = characterRoot.position.clone()
         const dir = new BABYLON.Vector3(-mouseX, -mouseY * 0.3, -1).normalize()
-        const life = 1.5; const start = animTime
+        const life = 1.5; const start = animTime; let shotAlive = true
         scene.registerBeforeRender(function shotAnim() {
+          if (!shotAlive) return
           shoot.position.addInPlace(dir.scale(delta * 20))
-          if (animTime - start > life) { shoot.dispose(); const idx = scene.registerBeforeRender.funcs.indexOf(shotAnim); if (idx >= 0) scene.registerBeforeRender.funcs.splice(idx, 1); return }
+          if (animTime - start > life) { shotAlive = false; shoot.dispose(); return }
           // Check hit
           for (const al of aliens) {
             if (!al.alive) continue
@@ -1173,7 +1175,7 @@ document.addEventListener('DOMContentLoaded', () => {
               al.mesh.scaling = new BABYLON.Vector3(1.3, 1.3, 1.3)
               setTimeout(() => { if (al.mesh) al.mesh.scaling = new BABYLON.Vector3(1, 1, 1) }, 100)
               if (al.health <= 0) { al.alive = false; al.mesh.setEnabled(false); score += 100; sBucks += 10; updateSBucks(); playCollect() }
-              shoot.dispose(); const idx = scene.registerBeforeRender.funcs.indexOf(shotAnim); if (idx >= 0) scene.registerBeforeRender.funcs.splice(idx, 1)
+              shotAlive = false; shoot.dispose(); return
             }
           }
         })
@@ -1194,15 +1196,14 @@ document.addEventListener('DOMContentLoaded', () => {
           const proj = BABYLON.MeshBuilder.CreateSphere('alProj', { diameter: 0.2 }, scene)
           proj.position = al.mesh.position.clone()
           const aDir = characterRoot.position.subtract(al.mesh.position).normalize()
-          const pLife = 2.5; const pStart = animTime
+          const pLife = 2.5; const pStart = animTime; let projAlive = true
           scene.registerBeforeRender(function alProjAnim() {
-            if (!proj || proj.isDisposed()) return
+            if (!projAlive || !proj || proj.isDisposed()) return
             proj.position.addInPlace(aDir.scale(delta * 12))
-            if (animTime - pStart > pLife) { proj.dispose(); const idx = scene.registerBeforeRender.funcs.indexOf(alProjAnim); if (idx >= 0) scene.registerBeforeRender.funcs.splice(idx, 1); return }
+            if (animTime - pStart > pLife) { projAlive = false; proj.dispose(); return }
             if (characterRoot && BABYLON.Vector3.Distance(proj.position, characterRoot.position) < 1.5) {
-              playerHealth -= 15; proj.dispose()
+              playerHealth -= 15; projAlive = false; proj.dispose()
               shakeAmount = 0.4
-              const idx = scene.registerBeforeRender.funcs.indexOf(alProjAnim); if (idx >= 0) scene.registerBeforeRender.funcs.splice(idx, 1)
               if (playerHealth <= 0) {
                 const lz3 = landingZones[landedPlanetIndex]
                 if (lz3) { launchFromPlanet(); ship.position.z = lz3.z - 20; gameState = 'gameover'; gameOverMessage = 'DEFEATED ON ' + lz3.name; showGameOver() }
@@ -1487,15 +1488,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const p = BABYLON.MeshBuilder.CreateSphere('eProj', { diameter: 0.2 }, scene)
         p.position = es.root.position.clone()
         const dir = ship.position.subtract(es.root.position).normalize()
-        const pLife = 3; const start = animTime
+        const pLife = 3; const start = animTime; let eAlive = true
         scene.registerBeforeRender(function eProjAnim() {
-          if (!p || p.isDisposed()) return
+          if (!eAlive || !p || p.isDisposed()) return
           p.position.addInPlace(dir.scale(delta * 15))
-          if (animTime - start > pLife) { p.dispose(); const idx = scene.registerBeforeRender.funcs.indexOf(eProjAnim); if (idx >= 0) scene.registerBeforeRender.funcs.splice(idx, 1); return }
+          if (animTime - start > pLife) { eAlive = false; p.dispose(); return }
           if (BABYLON.Vector3.Distance(p.position, ship.position) < 2) {
-            p.dispose(); playerHP -= 10; shakeAmount = 0.3; playCrash()
+            eAlive = false; p.dispose(); playerHP -= 10; shakeAmount = 0.3; playCrash()
             if (playerHP <= 0) { gameState = 'gameover'; gameOverMessage = 'DESTROYED IN COMBAT'; shakeAmount = 1.5; showGameOver() }
-            const idx = scene.registerBeforeRender.funcs.indexOf(eProjAnim); if (idx >= 0) scene.registerBeforeRender.funcs.splice(idx, 1)
           }
         })
       }
@@ -1997,13 +1997,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const fwd = new BABYLON.Vector3((Math.random() - 0.5) * 3, Math.random() * 3, (Math.random() - 0.5) * 3)
       const fwl = 1 + Math.random() * 2
       const startT = animTime
+      let fwAlive = true
       scene.registerBeforeRender(function fwAnim() {
+        if (!fwAlive) return
         fw.position.addInPlace(fwd.scale(0.02))
         fwd.y -= 0.005
         if (fw.position.y < 0 || animTime - startT > fwl) {
-          fw.dispose()
-          const idx = scene.registerBeforeRender.funcs.indexOf(fwAnim)
-          if (idx >= 0) scene.registerBeforeRender.funcs.splice(idx, 1)
+          fwAlive = false; fw.dispose()
         }
       })
     }
