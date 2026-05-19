@@ -813,6 +813,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   buildShip(selectedShipId)
 
+  // Shield visual
+  const shieldSphere = BABYLON.MeshBuilder.CreateSphere('shieldVis', { diameter: 1.8 }, scene)
+  const shieldMat = new BABYLON.StandardMaterial('shieldMat', scene)
+  shieldMat.emissiveColor = new BABYLON.Color3(0, 0.8, 1)
+  shieldMat.alpha = 0.15
+  shieldMat.backFaceCulling = false
+  shieldMat.disableLighting = true
+  shieldSphere.material = shieldMat
+  shieldSphere.isVisible = false
+  shieldSphere.parent = ship
+
   // === CAMERA ===
   const camera = new BABYLON.UniversalCamera('cam', new BABYLON.Vector3(0, 3, 8), scene)
   camera.fov = 1.0
@@ -1036,6 +1047,15 @@ document.addEventListener('DOMContentLoaded', () => {
       engineOsc.frequency.value = 60 + (speed / maxSpeed) * 120
     }
 
+    // Shield visual
+    if (shieldHP > 0) {
+      shieldSphere.isVisible = true
+      shieldMat.alpha = 0.1 + Math.sin(animTime * 4) * 0.05
+      shieldMat.emissiveColor = new BABYLON.Color3(0.3 + Math.sin(animTime * 3) * 0.2, 0.6, 1)
+    } else {
+      shieldSphere.isVisible = false
+    }
+
     // Engine glow pulse
     if (shipParts.length > 0) {
       const engMat2 = shipParts[shipParts.length - 1].material
@@ -1197,6 +1217,9 @@ document.addEventListener('DOMContentLoaded', () => {
         bp.mesh.position.addInPlace(bp.dir.scale(delta * 20))
         bp.life -= delta
         if (bp.life <= 0 || bp.mesh.position.z > TOTAL_LENGTH + 50) {
+          // Remove from obstacles array too
+          const oi = obstacles.findIndex(o => o.mesh === bp.mesh)
+          if (oi >= 0) obstacles.splice(oi, 1)
           bp.mesh.dispose()
           bossProjectiles.splice(i, 1)
         }
@@ -1509,6 +1532,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <h1 style="color:#f44">GAME OVER</h1>
       <div class="sub">${gameOverMessage}</div>
       <div class="finish-pos">You placed #${pos} of 14</div>
+      <div style="color:#fff;font-size:16px;margin:8px 0">Score: ${score}  ◆ ${orbsCollected} orbs</div>
       <button onclick="location.reload()">RESTART</button>
     `
   }
@@ -1525,8 +1549,30 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="sub">Race Complete</div>
       <div class="finish-pos">You placed #${pos} of 14</div>
       <div style="color:#ffd700;font-size:22px;margin:8px 0">+50 🪙 S Bucks</div>
+      <div style="color:#fff;font-size:16px;margin:4px 0">Score: ${score}  ◆ ${orbsCollected} orbs</div>
       <button onclick="location.reload()">RESTART</button>
     `
+    // Win fireworks
+    for (let i = 0; i < 50; i++) {
+      const fw = BABYLON.MeshBuilder.CreateSphere('fw' + i, { diameter: 0.15 + Math.random() * 0.2 }, scene)
+      fw.position = ship.position.clone()
+      const fm = new BABYLON.StandardMaterial('fm' + i, scene)
+      fm.emissiveColor = new BABYLON.Color3(Math.random(), Math.random() * 0.5 + 0.5, Math.random() * 0.3)
+      fm.disableLighting = true
+      fw.material = fm
+      const fwd = new BABYLON.Vector3((Math.random() - 0.5) * 3, Math.random() * 3, (Math.random() - 0.5) * 3)
+      const fwl = 1 + Math.random() * 2
+      const startT = animTime
+      scene.registerBeforeRender(function fwAnim() {
+        fw.position.addInPlace(fwd.scale(0.02))
+        fwd.y -= 0.005
+        if (fw.position.y < 0 || animTime - startT > fwl) {
+          fw.dispose()
+          const idx = scene.registerBeforeRender.funcs.indexOf(fwAnim)
+          if (idx >= 0) scene.registerBeforeRender.funcs.splice(idx, 1)
+        }
+      })
+    }
   }
 
   function getPlayerPosition() {
