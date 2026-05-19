@@ -248,11 +248,12 @@ document.addEventListener('DOMContentLoaded', () => {
   sun.intensity = 0.6
   sun.diffuse = new BABYLON.Color3(0.8, 0.85, 1)
 
-  // Post-processing: bloom + HDR-like tone mapping
-  scene.imageProcessingConfiguration.bloomEnabled = true
-  scene.imageProcessingConfiguration.bloomThreshold = 0.35
-  scene.imageProcessingConfiguration.bloomScale = 0.7
-  scene.imageProcessingConfiguration.bloomKernel = 64
+  // Post-processing: bloom + HDR-like tone mapping via DefaultRenderingPipeline
+  const pipeline = new BABYLON.DefaultRenderingPipeline('default', false, scene)
+  pipeline.bloomEnabled = true
+  pipeline.bloomThreshold = 0.25
+  pipeline.bloomScale = 0.8
+  pipeline.bloomKernel = 64
   scene.imageProcessingConfiguration.toneMappingEnabled = true
   scene.imageProcessingConfiguration.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_ACES
 
@@ -960,7 +961,7 @@ document.addEventListener('DOMContentLoaded', () => {
       for (let i = 0; i < landingZones.length; i++) {
         const lz = landingZones[i]
         const d = BABYLON.Vector3.Distance(ship.position, new BABYLON.Vector3(lz.x, lz.y, lz.z))
-        if (d < lz.size + 8) { nearLZ = i; break }
+        if (d < lz.size + 18) { nearLZ = i; break }
       }
       if (nearLZ >= 0) {
         landPromptEl.style.display = 'block'
@@ -1154,8 +1155,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Turbo burst on space
-    const turboPressed = space && !turboUsed
     let turboUsed = false
+    const turboPressed = space && !turboUsed
     if (turboPressed && turboMeter >= maxTurbo) {
       speed += 50
       turboMeter = 0
@@ -1943,9 +1944,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let landPromptEl = document.getElementById('landPrompt')
 
   const landingZones = [
-    { name: 'PROXIMA B', z: 500, x: 22, y: -5, color: new BABYLON.Color3(0.2, 0.4, 0.8), size: 20 },
-    { name: 'KEPLER-7', z: 1000, x: -28, y: -3, color: new BABYLON.Color3(0.8, 0.3, 0.15), size: 25 },
-    { name: 'ATHENA PRIME', z: 2000, x: 35, y: -8, color: new BABYLON.Color3(0.1, 0.6, 0.4), size: 30 },
+    { name: 'PROXIMA B', z: 500, x: 15, y: -3, color: new BABYLON.Color3(0.2, 0.4, 0.8), size: 25 },
+    { name: 'KEPLER-7', z: 1000, x: -18, y: -2, color: new BABYLON.Color3(0.8, 0.3, 0.15), size: 30 },
+    { name: 'ATHENA PRIME', z: 2000, x: 20, y: -5, color: new BABYLON.Color3(0.1, 0.6, 0.4), size: 35 },
   ]
 
   function createLandingZones() {
@@ -1957,13 +1958,25 @@ document.addEventListener('DOMContentLoaded', () => {
       planet.position = new BABYLON.Vector3(lz.x, lz.y, lz.z); planet.material = pMat
       lz.planetMesh = planet
 
+      // Atmosphere glow
       const aMat = new BABYLON.StandardMaterial('lzAtmos_' + lz.name, scene)
-      aMat.emissiveColor = lz.color.scale(0.25); aMat.alpha = 0.12; aMat.backFaceCulling = false
+      aMat.emissiveColor = lz.color.scale(0.3); aMat.alpha = 0.18; aMat.backFaceCulling = false
       aMat.disableLighting = true
       const atmos = BABYLON.MeshBuilder.CreateSphere('lzAtmos_' + lz.name, { diameter: lz.size * 2.8 }, scene)
       atmos.position = planet.position.clone(); atmos.material = aMat
       lz.atmosMesh = atmos
 
+      // Planetary ring (tilted)
+      if (lz.name !== 'KEPLER-7') {
+        const ringMat = new BABYLON.StandardMaterial('ringMat_' + lz.name, scene)
+        ringMat.diffuseColor = lz.color.scale(0.4); ringMat.alpha = 0.25; ringMat.backFaceCulling = false
+        ringMat.emissiveColor = lz.color.scale(0.1)
+        const ring = BABYLON.MeshBuilder.CreateTorus('ring_' + lz.name, { diameter: lz.size * 3.5, thickness: 0.8 }, scene)
+        ring.position = planet.position.clone(); ring.rotation.x = 0.6; ring.rotation.z = 0.3
+        ring.material = ringMat
+      }
+
+      // Landing zone marker (glowing ring on surface)
       const rMat = new BABYLON.StandardMaterial('lzRing_' + lz.name, scene)
       rMat.emissiveColor = new BABYLON.Color3(0, 1, 0.4); rMat.alpha = 0.35; rMat.backFaceCulling = false
       rMat.disableLighting = true
@@ -1971,6 +1984,15 @@ document.addEventListener('DOMContentLoaded', () => {
       ring.position = new BABYLON.Vector3(lz.x, lz.y - lz.size + 0.5, lz.z)
       ring.rotation.x = Math.PI / 2; ring.material = rMat
       lz.ringMesh = ring
+
+      // Landing beacon beam (glowing pillar above ring)
+      const beamMat = new BABYLON.StandardMaterial('beamMat_' + lz.name, scene)
+      beamMat.emissiveColor = new BABYLON.Color3(0, 1, 0.3); beamMat.alpha = 0.08; beamMat.backFaceCulling = false
+      beamMat.disableLighting = true
+      const beam = BABYLON.MeshBuilder.CreateCylinder('beam_' + lz.name, { height: 6, diameterTop: 0.05, diameterBottom: 0.5 }, scene)
+      beam.position = new BABYLON.Vector3(lz.x, lz.y - lz.size + 3.5, lz.z)
+      beam.material = beamMat
+      lz.beamMesh = beam
     }
   }
   createLandingZones()
