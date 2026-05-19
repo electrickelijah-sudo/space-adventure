@@ -252,16 +252,21 @@ document.addEventListener('DOMContentLoaded', () => {
   sun.intensity = 0.6
   sun.diffuse = new BABYLON.Color3(0.8, 0.85, 1)
 
-  // Post-processing: cinematic pipeline
-  const pipeline = new BABYLON.DefaultRenderingPipeline('default', false, scene)
-  pipeline.bloomEnabled = true
-  pipeline.bloomThreshold = 0.2
-  pipeline.bloomScale = 1.0
-  pipeline.bloomKernel = 64
-  scene.imageProcessingConfiguration.toneMappingEnabled = true
-  scene.imageProcessingConfiguration.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_ACES
-  scene.imageProcessingConfiguration.vignetteEnabled = true
-  scene.imageProcessingConfiguration.vignetteWeight = 0.4
+  // Post-processing: cinematic pipeline (gracefully degrade if not available)
+  let pipeline = null
+  try { pipeline = new BABYLON.DefaultRenderingPipeline('default', false, scene) } catch(e) { console.log('Pipeline not available:', e.message) }
+  if (pipeline) {
+    pipeline.bloomEnabled = true
+    pipeline.bloomThreshold = 0.2
+    pipeline.bloomScale = 1.0
+    pipeline.bloomKernel = 64
+  }
+  try {
+    scene.imageProcessingConfiguration.toneMappingEnabled = true
+    scene.imageProcessingConfiguration.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_ACES
+    scene.imageProcessingConfiguration.vignetteEnabled = true
+    scene.imageProcessingConfiguration.vignetteWeight = 0.4
+  } catch(e) { console.log('Tone mapping not available:', e.message) }
 
   // Simple lens flare using bright glow sprite
   const flareMat = new BABYLON.StandardMaterial('flareMat', scene)
@@ -973,9 +978,17 @@ document.addEventListener('DOMContentLoaded', () => {
   camera.minZ = 0.1
   camera.maxZ = 2000
 
-  // Film grain cinematic effect
-  const grain = new BABYLON.FilmPostProcess('grain', 0.3, 0.6, 1.0, camera)
-  grain.enabled = true
+  // Film grain cinematic effect (CSS-based for compatibility)
+  const grainCanvas = document.createElement('canvas')
+  grainCanvas.width = 128; grainCanvas.height = 128
+  const gCtx = grainCanvas.getContext('2d')
+  const grainImg = gCtx.createImageData(128, 128)
+  for (let i = 0; i < grainImg.data.length; i += 4) {
+    const v = Math.random() * 255; grainImg.data[i] = v; grainImg.data[i+1] = v; grainImg.data[i+2] = v; grainImg.data[i+3] = 20
+  }
+  gCtx.putImageData(grainImg, 0, 0)
+  grainCanvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;pointer-events:none;mix-blend-mode:overlay;opacity:0.15'
+  document.body.appendChild(grainCanvas)
 
   // === INPUT ===
   const keys = {}
