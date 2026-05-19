@@ -651,7 +651,56 @@ document.addEventListener('DOMContentLoaded', () => {
   generateAlienRuins()
   generateCosmicAnomaly()
 
-  // Warp gate markers with animation data
+  // === MORE DEADLY OBSTACLES ===
+  // Floating mines (red pulsing spheres in asteroid field + deep space)
+  const mines = []
+  const mineMat = new BABYLON.StandardMaterial('mineMat', scene)
+  mineMat.emissiveColor = new BABYLON.Color3(1, 0.1, 0)
+  mineMat.diffuseColor = new BABYLON.Color3(0.5, 0.05, 0)
+  mineMat.disableLighting = true
+  for (let i = 0; i < 25; i++) {
+    const m = BABYLON.MeshBuilder.CreateSphere('mine' + i, { diameter: 0.8 }, scene)
+    m.position = new BABYLON.Vector3(
+      (Math.random() - 0.5) * 70, 1 + Math.random() * 4,
+      400 + Math.random() * 400
+    )
+    m.material = mineMat
+    obstacles.push({ mesh: m, radius: 1.2 })
+    mines.push({ mesh: m, phase: Math.random() * 6, driftX: (Math.random() - 0.5) * 10, speed: 0.3 + Math.random() * 0.5 })
+  }
+
+  // Plasma orbs (moving spheres in nebula)
+  const plasmaOrbs = []
+  const pMat = new BABYLON.StandardMaterial('pMat', scene)
+  pMat.emissiveColor = new BABYLON.Color3(0.8, 0.2, 1)
+  pMat.disableLighting = true
+  for (let i = 0; i < 15; i++) {
+    const p = BABYLON.MeshBuilder.CreateSphere('plasma' + i, { diameter: 1.2 }, scene)
+    const baseZ = 950 + Math.random() * 200
+    p.position = new BABYLON.Vector3((Math.random() - 0.5) * 50, 2 + Math.random() * 3, baseZ)
+    p.material = pMat
+    obstacles.push({ mesh: p, radius: 2 })
+    plasmaOrbs.push({ mesh: p, baseZ, speed: 2 + Math.random() * 3, range: 10 + Math.random() * 15, phase: Math.random() * 6 })
+  }
+
+  // Shock wave rings (cosmic anomaly - expanding toruses)
+  const shockRings = []
+  const shockMat = new BABYLON.StandardMaterial('shockMat', scene)
+  shockMat.emissiveColor = new BABYLON.Color3(0.5, 0.2, 1)
+  shockMat.alpha = 0.3
+  shockMat.backFaceCulling = false
+  shockMat.disableLighting = true
+  for (let i = 0; i < 5; i++) {
+    const sw = BABYLON.MeshBuilder.CreateTorus('shock' + i, { diameter: 1, thickness: 0.2 }, scene)
+    sw.position = new BABYLON.Vector3(0, 2, 1850 + i * 60)
+    sw.rotation.x = Math.PI / 2
+    sw.material = shockMat
+    obstacles.push({ mesh: sw, radius: 3 })
+    shockRings.push({ mesh: sw, timer: i * 2, active: false, maxD: 20 })
+  }
+
+  // Black hole gravity center
+  const blackHoleCenter = new BABYLON.Vector3(0, 0, 2050)
   const gateMat = new BABYLON.StandardMaterial('gateMat', scene)
   gateMat.emissiveColor = new BABYLON.Color3(0, 0.5, 0.8)
   gateMat.alpha = 0.4
@@ -965,6 +1014,57 @@ document.addEventListener('DOMContentLoaded', () => {
           bpMat.emissiveColor = new BABYLON.Color3(1, 1, 1)
           setTimeout(() => { bpMat.emissiveColor = new BABYLON.Color3(0, 0.5, 1) }, 100)
         }
+      }
+    }
+
+    // === MINE ANIMATION ===
+    mines.forEach((m) => {
+      const s = 1 + Math.sin(animTime * 3 + m.phase) * 0.15
+      m.mesh.scaling = new BABYLON.Vector3(s, s, s)
+      m.mesh.position.x += Math.sin(animTime * m.speed + m.phase) * delta * m.driftX * 0.5
+    })
+
+    // === PLASMA ORB MOVEMENT ===
+    plasmaOrbs.forEach((p) => {
+      p.mesh.position.z = p.baseZ + Math.sin(animTime * p.speed * 0.5 + p.phase) * p.range
+      const s2 = 1 + Math.sin(animTime * 4 + p.phase) * 0.2
+      p.mesh.scaling = new BABYLON.Vector3(s2, s2, s2)
+    })
+
+    // === SHOCK WAVE RINGS ===
+    shockRings.forEach((sw) => {
+      sw.timer += delta
+      if (sw.timer > 3 && !sw.active) {
+        sw.active = true
+        sw.mesh.scaling = new BABYLON.Vector3(0.2, 0.2, 0.2)
+        sw.timer = 0
+      }
+      if (sw.active) {
+        const scale = sw.mesh.scaling.x + delta * 3
+        sw.mesh.scaling = new BABYLON.Vector3(scale, scale, scale)
+        sw.mesh.rotation.z += delta * 2
+        sw.mesh.position.y = 2 + Math.sin(animTime * 2) * 0.5
+        if (scale > sw.maxD) {
+          sw.active = false
+          sw.mesh.scaling = new BABYLON.Vector3(0.2, 0.2, 0.2)
+        }
+        // Sync collision radius with visual size
+        sw.mesh.metadata = scale * 2
+      }
+    })
+
+    // === BLACK HOLE GRAVITY PULL ===
+    const toBH = blackHoleCenter.subtract(ship.position)
+    const bhDist = toBH.length()
+    if (bhDist < 60 && bhDist > 0 && ship.position.z > 1900) {
+      const pullForce = (1 - bhDist / 60) * 15 * delta
+      ship.position.addInPlace(toBH.normalize().scale(pullForce))
+      if (bhDist < 4) {
+        gameState = 'gameover'
+        gameOverMessage = 'CONSUMED BY SINGULARITY'
+        shakeAmount = 2
+        playCrash()
+        showGameOver()
       }
     }
 
