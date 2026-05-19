@@ -709,6 +709,13 @@ document.addEventListener('DOMContentLoaded', () => {
     ring.material = finishMat
   }
 
+  // Combat variables
+  let enemyShips = []
+  let lasers = []
+  let shootRequested = false
+  let laserCooldown = 0
+  let playerHP = 100
+
   // === FLYING ENEMY SHIPS ===
   function generateEnemyShips() {
     const eMat = new BABYLON.StandardMaterial('enemyMat', scene)
@@ -1033,13 +1040,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let bossMaxHP = 20
   let bossAlive = false
   let bossProjectiles = []
-
-  // Combat system
-  let shootRequested = false
-  let laserCooldown = 0
-  const lasers = []
-  let playerHP = 100
-  let enemyShips = []
 
   // Mouse shoot (only when pointer locked)
   canvas.addEventListener('mousedown', () => { if (pointerLocked) shootRequested = true })
@@ -2214,9 +2214,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let landPromptEl = document.getElementById('landPrompt')
 
   const landingZones = [
-    { name: 'PROXIMA B', z: 500, x: 15, y: -3, color: new BABYLON.Color3(0.2, 0.4, 0.8), size: 25 },
-    { name: 'KEPLER-7', z: 1000, x: -18, y: -2, color: new BABYLON.Color3(0.8, 0.3, 0.15), size: 30 },
-    { name: 'ATHENA PRIME', z: 2000, x: 20, y: -5, color: new BABYLON.Color3(0.1, 0.6, 0.4), size: 35 },
+    { name: 'PROXIMA B', z: 500, x: 15, y: -5, color: new BABYLON.Color3(0.1, 0.5, 1), size: 40 },
+    { name: 'KEPLER-7', z: 1000, x: -18, y: -4, color: new BABYLON.Color3(1, 0.4, 0.1), size: 50 },
+    { name: 'ATHENA PRIME', z: 2000, x: 20, y: -6, color: new BABYLON.Color3(0.1, 0.8, 0.5), size: 60 },
   ]
 
   function createLandingZones() {
@@ -2292,25 +2292,58 @@ document.addEventListener('DOMContentLoaded', () => {
     characterRoot.setEnabled(false)
   }
 
-  function createAliens(lz) {
+  // 30 ZOMBIE TYPES
+  const ZOMBIE_TYPES = []
+  const zNames = ['GRUNT','SPITTER','BRUTE','CRUSHER','SHRIEK','FUMER','LEAPER','GOOP','BOMBER','STALKER','FUNGUS','TOXIC','VOLT','CRYSTAL','SMOKE','RAGE','POISON','SHIELD','PETRI','BLOOM','THORN','MAGGOT','HUSK','WRAITH','CORRUPT','SPORE','SHANK','BURROW','RIPPER','BLOB']
+  const zColors = [
+    [0.7,0.1,0.05],[0.3,0.7,0.1],[0.6,0.2,0.7],[0.4,0.4,0.4],[0.9,0.6,0.05],
+    [0.2,0.8,0.3],[0.1,0.4,0.7],[0.8,0.3,0.6],[1,0.4,0.1],[0.3,0.2,0.5],
+    [0.1,0.7,0.4],[0.5,0.8,0.1],[0.2,0.6,0.9],[0.7,0.5,0.2],[0.4,0.4,0.6],
+    [0.9,0.1,0.1],[0.3,0.9,0.2],[0.2,0.3,0.8],[0.8,0.2,0.8],[0.1,0.8,0.5],
+    [0.6,0.3,0.1],[0.5,0.5,0.1],[0.3,0.3,0.3],[0.7,0.1,0.6],[0.2,0.5,0.3],
+    [0.9,0.5,0.8],[0.5,0.2,0.1],[0.1,0.3,0.5],[0.8,0.1,0.4],[0.1,0.9,0.8],
+  ]
+  const zSizes = [0.4,0.5,0.6,0.5,0.45,0.55,0.35,0.5,0.7,0.5,0.5,0.6,0.45,0.5,0.4,0.65,0.5,0.55,0.5,0.5,0.5,0.4,0.5,0.45,0.5,0.5,0.5,0.6,0.45,0.7]
+  const zHP = [3,2,5,4,2,3,1,2,2,3,4,2,3,3,2,5,2,4,3,2,3,2,3,2,3,2,2,4,2,6]
+
+  for (let i = 0; i < 30; i++) {
+    ZOMBIE_TYPES.push({
+      name: zNames[i], color: new BABYLON.Color3(zColors[i][0], zColors[i][1], zColors[i][2]),
+      size: zSizes[i], hp: zHP[i], speed: 1 + Math.random() * 2,
+    })
+  }
+
+  function createZombies(lz) {
     aliens.forEach(a => { a.mesh.dispose() }); aliens = []; alienProjectiles.forEach(p => { p.mesh.dispose() }); alienProjectiles = []
-    for (let i = 0; i < 5; i++) {
-      const aMat = new BABYLON.StandardMaterial('alienM' + i, scene)
-      aMat.diffuseColor = new BABYLON.Color3(0.7, 0.1, 0.05); aMat.emissiveColor = new BABYLON.Color3(0.25, 0.04, 0.02)
-      aMat.disableLighting = true
-      const body = BABYLON.MeshBuilder.CreateSphere('alien' + i, { diameter: 0.5 }, scene)
-      body.position = new BABYLON.Vector3(lz.x + (Math.random() - 0.5) * 10, lz.y - lz.size + 0.4, lz.z + (Math.random() - 0.5) * 10)
+    const count = 10 + Math.floor(Math.random() * 8)
+    for (let i = 0; i < count; i++) {
+      const zt = ZOMBIE_TYPES[i % 30]
+      const aMat = new BABYLON.StandardMaterial('zMat' + i, scene)
+      aMat.diffuseColor = zt.color; aMat.emissiveColor = zt.color.scale(0.2); aMat.disableLighting = true
+      const body = BABYLON.MeshBuilder.CreateSphere('zombie' + i, { diameter: zt.size }, scene)
+      body.position = new BABYLON.Vector3(lz.x + (Math.random() - 0.5) * lz.size * 0.8, lz.y - lz.size + zt.size * 0.5, lz.z + (Math.random() - 0.5) * lz.size * 0.8)
       body.material = aMat
-      const eMat = new BABYLON.StandardMaterial('alienEye' + i, scene)
+      const eMat = new BABYLON.StandardMaterial('zEye' + i, scene)
       eMat.emissiveColor = new BABYLON.Color3(1, 0.9, 0); eMat.disableLighting = true
       for (const s of [-1, 1]) {
-        const eye = BABYLON.MeshBuilder.CreateSphere('ae' + i + '_' + s, { diameter: 0.1 }, scene)
-        eye.parent = body; eye.position = new BABYLON.Vector3(s * 0.12, 0.08, -0.25); eye.material = eMat
+        const eye = BABYLON.MeshBuilder.CreateSphere('ze' + i + '_' + s, { diameter: zt.size * 0.15 }, scene)
+        eye.parent = body; eye.position = new BABYLON.Vector3(s * zt.size * 0.2, zt.size * 0.15, -zt.size * 0.4); eye.material = eMat
+      }
+      // Extra visual variety: some have spikes, some have extra eyes, etc.
+      if (i % 3 === 0) {
+        const spikeMat = new BABYLON.StandardMaterial('zSpike' + i, scene)
+        spikeMat.diffuseColor = zt.color.scale(0.5); spikeMat.emissiveColor = zt.color.scale(0.1)
+        for (let j = 0; j < 3; j++) {
+          const spike = BABYLON.MeshBuilder.CreateCylinder('spike' + i + '_' + j, { height: 0.2, diameter: 0.03 }, scene)
+          spike.parent = body; spike.position = new BABYLON.Vector3((Math.random() - 0.5) * zt.size * 0.5, zt.size * 0.5, (Math.random() - 0.5) * zt.size * 0.5)
+          spike.material = spikeMat
+        }
       }
       aliens.push({
-        mesh: body, health: 3, maxHealth: 3, phase: Math.random() * 6,
-        basePos: body.position.clone(), shootTimer: 1 + Math.random() * 2,
-        patrolR: 2 + Math.random() * 3, alive: true,
+        mesh: body, health: zt.hp, maxHealth: zt.hp, phase: Math.random() * 6,
+        basePos: body.position.clone(), shootTimer: 1 + Math.random() * 3,
+        patrolR: 1.5 + Math.random() * 3, alive: true, speed: zt.speed,
+        typeName: zt.name
       })
     }
   }
@@ -2322,7 +2355,7 @@ document.addEventListener('DOMContentLoaded', () => {
     createCharacter(); characterRoot.setEnabled(true)
     characterRoot.position = new BABYLON.Vector3(lz.x, lz.y - lz.size + 1, lz.z + 4)
     ship.setEnabled(false); shieldSphere.isVisible = false
-    createAliens(lz); playerHealth = 100; landPromptEl.style.display = 'none'
+    createZombies(lz); playerHealth = 100; landPromptEl.style.display = 'none'
     document.getElementById('gameOverlay').innerHTML = '<div style="position:fixed;top:10px;left:50%;transform:translateX(-50%);color:#0ff;font-size:15px;z-index:20;font-family:Courier New,monospace;text-shadow:0 0 10px rgba(0,255,255,0.5)">🌍 ' + lz.name + ' · WASD MOVE · CLICK SHOOT · SPACE LAUNCH</div>'
     document.getElementById('gameOverlay').style.display = 'block'
   }
