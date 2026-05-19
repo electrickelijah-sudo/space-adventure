@@ -263,10 +263,6 @@ document.addEventListener('DOMContentLoaded', () => {
   scene.imageProcessingConfiguration.vignetteEnabled = true
   scene.imageProcessingConfiguration.vignetteWeight = 0.4
 
-  // Film grain
-  const grain = new BABYLON.FilmPostProcess('grain', 0.3, 0.6, 1.0, camera)
-  setTimeout(() => { grain.enabled = true }, 100)
-
   // Simple lens flare using bright glow sprite
   const flareMat = new BABYLON.StandardMaterial('flareMat', scene)
   flareMat.emissiveColor = new BABYLON.Color3(1, 0.85, 0.5)
@@ -969,6 +965,10 @@ document.addEventListener('DOMContentLoaded', () => {
   camera.fov = 1.0
   camera.minZ = 0.1
   camera.maxZ = 2000
+
+  // Film grain cinematic effect
+  const grain = new BABYLON.FilmPostProcess('grain', 0.3, 0.6, 1.0, camera)
+  grain.enabled = true
 
   // === INPUT ===
   const keys = {}
