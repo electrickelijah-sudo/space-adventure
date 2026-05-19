@@ -1,0 +1,1102 @@
+{
+  "ef_river03": {
+    "id": "011afb3f-9ce4-4cb5-89ca-bcb6b0740a30",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "46a849c8c24e401086e3da0ddfae3c10",
+        "filename": "ef_water_nrm.png"
+      }
+    }
+  },
+  "m_CurbStone": {
+    "id": "03d179fb-ec8b-4201-9330-4b5e8efd58a7",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "d7f26821acf049de9cb84fb737775b3e",
+        "filename": "curbstone_01_alb.png"
+      }
+    }
+  },
+  "mc_Flower_Enkei": {
+    "id": "04465189-5095-4834-abbe-7edd5d53730b",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "Opacity": {
+        "uuid": "ab9e7f71da904e16bc9482cba18d1af8",
+        "filename": "mc_flower_enkei_02_alb.png"
+      },
+      "AlbedoPBR": {
+        "uuid": "ab9e7f71da904e16bc9482cba18d1af8",
+        "filename": "mc_flower_enkei_02_alb.png"
+      }
+    }
+  },
+  "mc_MARIOCIRCUIT_mozi": {
+    "id": "05b49718-bee3-46f3-ad44-a775d1c48ec6",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "Opacity": {
+        "uuid": "c5f72cf0f6fc4153a0787d2d5641f321",
+        "filename": "mariocircuit_01_alb.png"
+      },
+      "AlbedoPBR": {
+        "uuid": "c5f72cf0f6fc4153a0787d2d5641f321",
+        "filename": "mariocircuit_01_alb.png"
+      }
+    }
+  },
+  "mc_WoodShaft_Enkei": {
+    "id": "0785b1c9-3a6a-405a-9098-329db2d2bf61",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "f6a27e8b25b243f1a3f0cd1f62a0a304",
+        "filename": "mc_woodshaft_enkei_alb.png"
+      }
+    }
+  },
+  "HatenaBlockB": {
+    "id": "08069ee1-70b8-4c8d-bd71-da1e5194c6c7",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "56ca8fcb6e5148d1a1e04e5747f02486",
+        "filename": "hatenablock256_kaib_alb.png"
+      }
+    }
+  },
+  "mc_Rock_seiteki": {
+    "id": "0b0ca769-266c-4518-a13c-64fce3f818be",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "ca0e69401f5e42339ed56b717293ff8e",
+        "filename": "mc_rock_00_alb.png"
+      }
+    }
+  },
+  "mc_tou": {
+    "id": "0d24c695-f079-4332-9726-549847db1e8d",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      }
+    }
+  },
+  "mc_wood": {
+    "id": "0fabb370-8c06-4a0c-97c1-7185fe676f5a",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "914affe7758b43209307f374707a92ff",
+        "filename": "kinopiohousedoor_alb.png"
+      }
+    }
+  },
+  "m_PylonR": {
+    "id": "136e0697-8c8f-4e00-ae42-34d618628e29",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "06859fc471264ffa9f5d78e227f338cd",
+        "filename": "pylon_r_alb.png"
+      }
+    }
+  },
+  "m_TreeBush_Leaf": {
+    "id": "1469e0ed-d01e-407a-8513-a5cfccc3cd2a",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "Opacity": {
+        "uuid": "977492137ea44cf18903a585445484df",
+        "filename": "treebush_leaf_alb.png"
+      },
+      "AlbedoPBR": {
+        "uuid": "977492137ea44cf18903a585445484df",
+        "filename": "treebush_leaf_alb.png"
+      }
+    }
+  },
+  "mc_tetu": {
+    "id": "21c1dea7-a9fc-464e-9a6a-19a8c5c0212c",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      }
+    }
+  },
+  "di_TreeB_Base": {
+    "id": "258bfbb7-a102-44c3-89fe-abd563427f66",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "b2e7e89cbf1947eaa2e12801be93bc05",
+        "filename": "di_treeleaf_alb.png"
+      }
+    }
+  },
+  "m_CurbStone_ura": {
+    "id": "264a9627-67f1-46ff-949e-f6f6c8023750",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "d7f26821acf049de9cb84fb737775b3e",
+        "filename": "curbstone_01_alb.png"
+      }
+    }
+  },
+  "mc_renga": {
+    "id": "28b7ad6a-e3a5-4ea5-b586-0f4522a8290e",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "8b5077f739f34f62bec5edfe72d7f4ec",
+        "filename": "rengablock_alb.png"
+      }
+    }
+  },
+  "mc_kinopiohouse": {
+    "id": "2acad82d-4766-46dc-a33d-c426b57b80e1",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "914affe7758b43209307f374707a92ff",
+        "filename": "kinopiohousedoor_alb.png"
+      },
+      "MetalnessPBR": {
+        "uuid": "914affe7758b43209307f374707a92ff",
+        "filename": "kinopiohousedoor_alb.png"
+      }
+    }
+  },
+  "mc_dark_tatemono": {
+    "id": "2db0d9c8-dcfd-4a92-8350-1c7e0262cf16",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      }
+    }
+  },
+  "Siba_Enkei": {
+    "id": "32bcfed7-6797-4ab9-b293-d343785d6c40",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "c51560ea9e9e4f6395e6fa5ae40676a5",
+        "filename": "mc_siba_enkei_alb.png"
+      },
+      "NormalMap": {
+        "uuid": "8f3592324af249249c4c335c224c47f8",
+        "filename": "mc_siba_enkei_nrm.png"
+      }
+    }
+  },
+  "mc_door": {
+    "id": "32f5041c-6142-456f-a752-59775a69903a",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      }
+    }
+  },
+  "mc_orangi": {
+    "id": "34e2952c-feef-4c1b-9d82-c703b87639ee",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "e505787bc1ca41d6bcd375c9e944b336",
+        "filename": "orang_01_alb.png"
+      }
+    }
+  },
+  "StartGate_Gu_MarioCircuit": {
+    "id": "371f54c5-6079-4c90-948a-f28dfd35a038",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "afd7da80eb644469a01bc7185598e114",
+        "filename": "startgate_gu_mariocircuit_alb.png"
+      },
+      "NormalMap": {
+        "uuid": "25512e21873243c48aac5c5c95b93cf4",
+        "filename": "startgate_gu_mariocircuit_nrm.png"
+      }
+    }
+  },
+  "Guardrail_Curve_m": {
+    "id": "39243ba2-5f0f-43ba-95a1-2d4cf0d4f636",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "b938b2006ffc45c2b337b022096e51ae",
+        "filename": "guardrail_curve_03_alb.png"
+      }
+    }
+  },
+  "OrangeBox": {
+    "id": "3db8838e-d94a-464a-a9a5-ffdb8e795d92",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "NormalMap": {
+        "uuid": "9978e44c8d2e4d909e6bd5f8deadea02",
+        "filename": "orangebox_01_nrm.png"
+      }
+    }
+  },
+  "Siba_Enkei.002": {
+    "id": "3eac57d3-92f5-4e92-84c2-30a97a4a2265",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "c51560ea9e9e4f6395e6fa5ae40676a5",
+        "filename": "mc_siba_enkei_alb.png"
+      }
+    }
+  },
+  "StartGrit_01": {
+    "id": "41efa78c-1adf-4421-86e6-dd1e766ab683",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "a1dfdf0a1a814309bcf3ea55b2d3ee22",
+        "filename": "startgrit_01_alb.png"
+      },
+      "NormalMap": {
+        "uuid": "9d6cc7df7ec749fab7a7eaee287a1e29",
+        "filename": "startgrit_01_nrm.png"
+      }
+    }
+  },
+  "GardenLight_light": {
+    "id": "50b835af-5919-4d2c-aaf8-bedea06d27d0",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      }
+    }
+  },
+  "Road_exchange": {
+    "id": "50b94ae5-abf4-4f33-98b9-07dcc35fd6bb",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "951f8d56a4504e2fa181cdb6cbe13d56",
+        "filename": "m_road_alb.png"
+      }
+    }
+  },
+  "mc_metal_01": {
+    "id": "5101b3d5-b48f-4702-8f46-9d930243be34",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "b6f147f802a4470096e5490382482eb3",
+        "filename": "umc_metal_01_alb.png"
+      },
+      "NormalMap": {
+        "uuid": "6c32ec6abcb8406681bd6d98c4e67db7",
+        "filename": "umc_metal_01_nom.png"
+      }
+    }
+  },
+  "mc_kusa.001": {
+    "id": "51ef7c0d-643c-44f5-947f-e2b8785c40f5",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      }
+    }
+  },
+  "m_StreetlightA.001": {
+    "id": "57d053fa-53e5-43a7-9072-943fccf18c2c",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      }
+    }
+  },
+  "Road_hakusen_ura": {
+    "id": "60967a62-66f1-498a-bc56-b09a0fceeb28",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "d8a492390d174bbfb9e93618f81c2b69",
+        "filename": "m_road_hakusen_alb.png"
+      }
+    }
+  },
+  "Guardrail_Curve_ura": {
+    "id": "60e5b9a3-9b12-4fc6-a213-5248d8409f16",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "NormalMap": {
+        "uuid": "cb986cb7898341fdbdcd49e01d5f5c65",
+        "filename": "guardrail_curve_ura_nrm.png"
+      }
+    }
+  },
+  "mc_wR_tatemono": {
+    "id": "62811558-b2f7-4499-97f9-871d3a4f9b92",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "4cc4c8ab47434506a18db1ff4a4c8664",
+        "filename": "white_wall_05_alb.png"
+      }
+    }
+  },
+  "sign_all": {
+    "id": "658e143c-bb38-4cb2-8d64-38e4b3a8e8c1",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "314a53f2dd20430cbe2ffb825f4e5f72",
+        "filename": "sign_all_alb.png"
+      }
+    }
+  },
+  "m_StreetlightA_light": {
+    "id": "676f4a75-52e9-44e2-967f-2679d0211e3f",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      }
+    }
+  },
+  "mc_kusa": {
+    "id": "6d7dbac3-968c-4802-83fd-28e5df69116a",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "Opacity": {
+        "uuid": "f853ed2b94dc4bba8bd11f00731abb2f",
+        "filename": "kusa_01_alb.png"
+      },
+      "AlbedoPBR": {
+        "uuid": "f853ed2b94dc4bba8bd11f00731abb2f",
+        "filename": "kusa_01_alb.png"
+      }
+    }
+  },
+  "m_road_loght": {
+    "id": "7351cbd6-d302-4dc1-b8f5-014481253c2e",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "6be1ae9f108b4d8e9594175b7584f4b6",
+        "filename": "m_road_loght_alb.png"
+      }
+    }
+  },
+  "m_StreetlightA_02_Light": {
+    "id": "73b8f6d2-62da-46a4-8480-1ea9f6c29354",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      }
+    }
+  },
+  "mc_Tree_Enkei_seiteki": {
+    "id": "7ba85503-d723-42ed-a16b-07145112a293",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "d16748f21cd74cc384eb57956fbf4499",
+        "filename": "di_tree_leaf_alb.png"
+      }
+    }
+  },
+  "mc_red_roof": {
+    "id": "7f6d5a57-e946-40f5-90f1-fb4e27cb4d24",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "40f9c1b63d6c4e29a33451d11ffd4dac",
+        "filename": "umc_redroof_alb.png"
+      }
+    }
+  },
+  "GardenLight": {
+    "id": "88cd5812-7291-45d0-95e3-00988b09efef",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "c99bc4aeb1954911b5ed11e765b47220",
+        "filename": "gardenlight_01_alb.png"
+      },
+      "NormalMap": {
+        "uuid": "a75484db1be74787afa04cd5bcd17897",
+        "filename": "gardenlight_01_nrm.png"
+      }
+    }
+  },
+  "di_TreeA_Leaf": {
+    "id": "8b9f3a11-6256-49a9-95c9-38c0769db275",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "Opacity": {
+        "uuid": "d16748f21cd74cc384eb57956fbf4499",
+        "filename": "di_tree_leaf_alb.png"
+      },
+      "AlbedoPBR": {
+        "uuid": "d16748f21cd74cc384eb57956fbf4499",
+        "filename": "di_tree_leaf_alb.png"
+      }
+    }
+  },
+  "m_StreetlightA_02": {
+    "id": "8c4a0eee-dc06-4b4c-a53e-355003049d27",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "8b5775ba6a924b3193d8e48337d55d87",
+        "filename": "streetlighta2_alb.png"
+      }
+    }
+  },
+  "mc_w_tatemono": {
+    "id": "915a267d-705d-4718-9596-9a1459c00bfb",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "90912cbbf58d48069db99cdea9258b39",
+        "filename": "white_wall_04_alb.png"
+      }
+    }
+  },
+  "mc_Field_Enkei_Alpha": {
+    "id": "9c5f7c91-3fdf-4af1-8e27-6cd5915d2f76",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "fd2ce87f2a18438995b0042b689f3f90",
+        "filename": "mc_field_enkei_alb.png"
+      }
+    }
+  },
+  "m_grass": {
+    "id": "a2afbe19-5101-438e-a70e-7aca4acacb7e",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "c51560ea9e9e4f6395e6fa5ae40676a5",
+        "filename": "mc_siba_enkei_alb.png"
+      }
+    }
+  },
+  "mc_yellow": {
+    "id": "a30bf527-e629-43af-9791-5a6c38d5ae91",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "fdd6dfd673dd4091924fbf5aef80c8d1",
+        "filename": "yellow_01_alb.png"
+      }
+    }
+  },
+  "Road": {
+    "id": "aa43f7c4-1f4b-4e44-842f-ffee4663fd2d",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "951f8d56a4504e2fa181cdb6cbe13d56",
+        "filename": "m_road_alb.png"
+      },
+      "NormalMap": {
+        "uuid": "096e58dd012149589631526e5a35dcf8",
+        "filename": "m_road_nrm.png"
+      }
+    }
+  },
+  "mc_red_roof_edge": {
+    "id": "ab05a323-b6aa-4074-8cb1-8cd865700dc6",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "3f9a311ac3cd4123b14da3ad868f0257",
+        "filename": "umc_redroof_edge_alb.png"
+      }
+    }
+  },
+  "m_CmnStartGrid": {
+    "id": "ab19351a-a104-48d0-a80b-d87b2205b618",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      }
+    }
+  },
+  "mc_Field_Enkei": {
+    "id": "ab992fdf-c572-4291-82f7-9e4ab2c7fc77",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "fd2ce87f2a18438995b0042b689f3f90",
+        "filename": "mc_field_enkei_alb.png"
+      }
+    }
+  },
+  "PlantA_m": {
+    "id": "acd70e72-d132-4e43-99a8-f059718a29b3",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "Opacity": {
+        "uuid": "27d0759de4b8472dbd756ac4a72f1a02",
+        "filename": "planta_01_alb.png"
+      },
+      "AlbedoPBR": {
+        "uuid": "27d0759de4b8472dbd756ac4a72f1a02",
+        "filename": "planta_01_alb.png"
+      }
+    }
+  },
+  "yane_ue": {
+    "id": "ae71e13c-740b-483d-9534-cf541636ccb5",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "31f5269daf8d40cf9ce3c6fc2cb12b1c",
+        "filename": "yane_ue_alb.png"
+      },
+      "NormalMap": {
+        "uuid": "601cbffd785f43f09aca0acbd888f5e2",
+        "filename": "yane_ue_nrm.png"
+      }
+    }
+  },
+  "ef_waterF": {
+    "id": "b0879af3-ad8c-4795-b6d1-d7409a945b41",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "NormalMap": {
+        "uuid": "20a75af7c85b48888e425b4315659856",
+        "filename": "ef_waterfall02_nrm.png"
+      }
+    }
+  },
+  "mc_Tree_Enkei": {
+    "id": "b4cd1746-4925-4547-9d2b-87e797dfa4a3",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "b2e7e89cbf1947eaa2e12801be93bc05",
+        "filename": "di_treeleaf_alb.png"
+      },
+      "NormalMap": {
+        "uuid": "5b7e4b316828405698a6ab7eb1c5fedd",
+        "filename": "mc_tree_enkei_nrm.png"
+      }
+    }
+  },
+  "ef_waterfall02": {
+    "id": "b745b5ed-503e-4da2-9260-19151f123e7d",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "20a75af7c85b48888e425b4315659856",
+        "filename": "ef_waterfall02_nrm.png"
+      },
+      "NormalMap": {
+        "uuid": "20a75af7c85b48888e425b4315659856",
+        "filename": "ef_waterfall02_nrm.png"
+      }
+    }
+  },
+  "ef_gravityboard": {
+    "id": "be3c394e-66aa-489d-a997-2f892c68df5a",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "d18c1285e5454a7eb2a8541f79738bee",
+        "filename": "ef_gravitypanell_alb3.png"
+      }
+    }
+  },
+  "m_mist": {
+    "id": "c016f8ff-91ed-4ef9-be3f-bea0b56cbea1",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "Opacity": {
+        "uuid": "8725fe86fdfe4ca9ba1541aeca7c726f",
+        "filename": "mist_01_alb.png"
+      },
+      "AlbedoPBR": {
+        "uuid": "8725fe86fdfe4ca9ba1541aeca7c726f",
+        "filename": "mist_01_alb.png"
+      }
+    }
+  },
+  "ct_ry_flowers01": {
+    "id": "c1bc384d-61ed-4268-abb6-48d51b85a070",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "Opacity": {
+        "uuid": "53d7a87cdae44b9e908c5fa102db5c61",
+        "filename": "ct_ry_flowers01_alb.png"
+      },
+      "AlbedoPBR": {
+        "uuid": "53d7a87cdae44b9e908c5fa102db5c61",
+        "filename": "ct_ry_flowers01_alb.png"
+      },
+      "NormalMap": {
+        "uuid": "c3d7193cf5f74257a381c94d7672a397",
+        "filename": "ct_ry_flowers01_nrm.png"
+      }
+    }
+  },
+  "mc_StoneBrown": {
+    "id": "c246bf5c-1160-4163-9419-242c2571371e",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "54ccbd8787204aef86e43acef6e18569",
+        "filename": "mc_brick_alb.png"
+      }
+    }
+  },
+  "mc_Kakiwari": {
+    "id": "c33e76c8-b9d6-430f-8c37-5b198e4df504",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "Opacity": {
+        "uuid": "d385c5d241394631b6f05b02b3980469",
+        "filename": "mc_kakiwari_00_alb.png"
+      },
+      "AlbedoPBR": {
+        "uuid": "d385c5d241394631b6f05b02b3980469",
+        "filename": "mc_kakiwari_00_alb.png"
+      }
+    }
+  },
+  "mc_door.002": {
+    "id": "c6395819-4c75-4c90-84ec-249aff0e4e89",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "05fd0e00d24c4f0cbe4afe93ad68eaf4",
+        "filename": "door05_alb.png"
+      }
+    }
+  },
+  "whidou_naka": {
+    "id": "c8afa7c7-a740-4dab-b91b-96e886592258",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      }
+    }
+  },
+  "Road_hakusen": {
+    "id": "c926a452-c180-49a2-86a0-58194d31f4a1",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "d8a492390d174bbfb9e93618f81c2b69",
+        "filename": "m_road_hakusen_alb.png"
+      }
+    }
+  },
+  "CmnPole1": {
+    "id": "c94bcded-467f-4394-adb5-99db1716efbf",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "NormalMap": {
+        "uuid": "180f22001e2f4e00b462385e8fce2702",
+        "filename": "cmnpole1_nrm.png"
+      }
+    }
+  },
+  "m_blueS": {
+    "id": "d18e7ded-2e7f-47d0-9a00-b8567d85df44",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "e857358936ac4f6097abc88421b62860",
+        "filename": "blue_01_alb.png"
+      }
+    }
+  },
+  "mc_hashi": {
+    "id": "d5ccfbfa-7fec-459f-8185-c4c3c53f335f",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "789e8f85674f411b9a9f9c62394985f6",
+        "filename": "umc_hashi_alb.png"
+      },
+      "NormalMap": {
+        "uuid": "ff0a7b5220fb48b8ad08c6eb2db40359",
+        "filename": "umc_hashi_nom.png"
+      }
+    }
+  },
+  "mc_nuki_01": {
+    "id": "dfd42d5b-963c-4626-99eb-8a5ea48ccc99",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "Opacity": {
+        "uuid": "bdb9a225cd62471b9a62a5c8e04481e6",
+        "filename": "umc_nuki_01_alb.png"
+      },
+      "AlbedoPBR": {
+        "uuid": "bdb9a225cd62471b9a62a5c8e04481e6",
+        "filename": "umc_nuki_01_alb.png"
+      },
+      "NormalMap": {
+        "uuid": "7401e5bd2b7e43159121d7e9cc208e94",
+        "filename": "umc_nuki_01_nom.png"
+      }
+    }
+  },
+  "Road_ura": {
+    "id": "e8ca0be5-9bfa-49c4-aab9-c3bdf4eaaa54",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "951f8d56a4504e2fa181cdb6cbe13d56",
+        "filename": "m_road_alb.png"
+      }
+    }
+  },
+  "mc_Kusa": {
+    "id": "eac82163-0e72-4b6b-83a4-46ca2dfcf0ad",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "Opacity": {
+        "uuid": "f853ed2b94dc4bba8bd11f00731abb2f",
+        "filename": "kusa_01_alb.png"
+      },
+      "AlbedoPBR": {
+        "uuid": "f853ed2b94dc4bba8bd11f00731abb2f",
+        "filename": "kusa_01_alb.png"
+      }
+    }
+  },
+  "PanelFlame": {
+    "id": "ebea121d-3b7a-4f1b-9a7d-2c0a58b73631",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "NormalMap": {
+        "uuid": "37fdadf653a94ea0902bdb4828856a17",
+        "filename": "panelflame_nrm.png"
+      }
+    }
+  },
+  "mc_Rock": {
+    "id": "ee9364a2-c0d5-40ff-aa07-c870d3d2a9e8",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "ca0e69401f5e42339ed56b717293ff8e",
+        "filename": "mc_rock_00_alb.png"
+      },
+      "NormalMap": {
+        "uuid": "159f5d93d5c641dd9a378013923db582",
+        "filename": "mc_rock_00_nrm.png"
+      }
+    }
+  },
+  "m_fenceA": {
+    "id": "f1d45865-f40f-4dc2-9abb-a9903154f917",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "d1289c2465ec4f3ab55367f4c4e99f0d",
+        "filename": "fencea_01_alb.png"
+      }
+    }
+  },
+  "yane": {
+    "id": "f28560ba-4ae1-47a3-a5ee-191218f9a1b2",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "a8c9d2543ac14933bd17b4835f34cc82",
+        "filename": "yane_alb.png"
+      },
+      "NormalMap": {
+        "uuid": "601cbffd785f43f09aca0acbd888f5e2",
+        "filename": "yane_ue_nrm.png"
+      }
+    }
+  },
+  "StartGate_Gu_MarioCircuit.001": {
+    "id": "f9491b4a-a324-4285-9f53-7572c7af773a",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      }
+    }
+  },
+  "rengablock": {
+    "id": "fabc4bc9-198b-41e1-af4e-1cef7e01aec6",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "8b5077f739f34f62bec5edfe72d7f4ec",
+        "filename": "rengablock_alb.png"
+      },
+      "NormalMap": {
+        "uuid": "5cf4bb05dd814ef8a98a1d2b59b91e10",
+        "filename": "rengablock_nrm.png"
+      }
+    }
+  },
+  "shirokabe": {
+    "id": "fb052bf1-a12f-4fa4-b99e-3ff97c81a9b9",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "03dff4aabee84dfea04185da63e7d996",
+        "filename": "shirorenga_alb.png"
+      }
+    }
+  },
+  "m_StreetlightA": {
+    "id": "fb3368ea-73b5-4aa2-a88a-631e3906dd07",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "afd7da80eb644469a01bc7185598e114",
+        "filename": "startgate_gu_mariocircuit_alb.png"
+      }
+    }
+  },
+  "mc_kinopiohouse.002": {
+    "id": "fe8e28b8-2033-4602-acc3-b01be223642d",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "aa5ee5fc53734be5975c633334ed2490",
+        "filename": "kinopiohouse_alb.png"
+      }
+    }
+  },
+  "mc_sand": {
+    "id": "fef58205-5150-4466-9f47-ebc36f6cf8a9",
+    "textures": {
+      "Matcap": {
+        "uuid": "35c4d334eded44d8a657f390954a32dd",
+        "filename": "unknown_35c4d334"
+      },
+      "AlbedoPBR": {
+        "uuid": "0f91708d0dc14f75ac61513a4f75e015",
+        "filename": "gcddd_road02_alb.png"
+      }
+    }
+  }
+}

@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Space Voyage</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000; overflow: hidden; font-family: 'Courier New', monospace; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+  #ui {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    color: #0ff; text-align: center; pointer-events: none; z-index: 10;
+    text-shadow: 0 0 10px rgba(0,255,255,0.5);
+  }
+  #zoneName {
+    font-size: 28px; font-weight: bold; letter-spacing: 4px;
+    transition: opacity 0.5s;
+  }
+  #speedDisplay { font-size: 18px; margin-top: 8px; opacity: 0.8; }
+  #controls { font-size: 13px; margin-top: 12px; opacity: 0.5; letter-spacing: 1px; }
+  #progressBar {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    width: 300px; height: 4px; background: rgba(0,255,255,0.15); border-radius: 2px; z-index: 10;
+  }
+  #progressFill {
+    height: 100%; width: 0%; background: #0ff; border-radius: 2px;
+    transition: width 0.3s;
+    box-shadow: 0 0 12px rgba(0,255,255,0.6);
+  }
+  #regionLabels {
+    position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
+    width: 300px; z-index: 10; pointer-events: none;
+  }
+  .region-label {
+    position: absolute; font-size: 9px; color: rgba(0,255,255,0.25);
+    text-align: center; transform: translateX(-50%); letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  #zoneTransition {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: #fff; opacity: 0; pointer-events: none; z-index: 20;
+    transition: opacity 0.8s;
+  }
+  #zoneTransition.active { opacity: 0.2; }
+  #stormOverlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(ellipse at center, transparent 30%, rgba(100,50,180,0.3));
+    pointer-events: none; z-index: 15; opacity: 0;
+    transition: opacity 1.5s;
+  }
+  #stormOverlay.active { opacity: 1; }
+  #hyperspaceIndicator {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    color: rgba(0,200,255,0.06); font-size: 80px; font-weight: bold;
+    pointer-events: none; z-index: 5; letter-spacing: 20px;
+    font-family: Arial, sans-serif; opacity: 0;
+    transition: opacity 0.5s;
+  }
+  #hyperspaceIndicator.active { opacity: 1; }
+  #zoneDesc {
+    font-size: 13px; margin-top: 4px; opacity: 0.5; letter-spacing: 2px;
+  }
+  #warpAlert {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    color: #0ff; font-size: 22px; letter-spacing: 6px;
+    pointer-events: none; z-index: 25; opacity: 0;
+    transition: opacity 0.6s; font-family: 'Courier New', monospace;
+    text-shadow: 0 0 30px rgba(0,255,255,0.8);
+  }
+  #warpAlert.active { opacity: 1; }
+  .region-label.active { color: rgba(0,255,255,0.8); font-size: 10px; }
+  #gameOverlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    display: none; justify-content: center; align-items: center;
+    flex-direction: column; z-index: 40; pointer-events: auto;
+    background: rgba(0,0,0,0.75); font-family: 'Courier New', monospace;
+  }
+  #gameOverlay h1 { font-size: 64px; margin-bottom: 16px; letter-spacing: 8px; }
+  #gameOverlay .sub { font-size: 20px; opacity: 0.7; margin-bottom: 8px; }
+  #gameOverlay .finish-pos { font-size: 28px; margin: 16px 0; }
+  #gameOverlay button {
+    margin-top: 20px; padding: 14px 48px; font-size: 18px; cursor: pointer;
+    background: transparent; color: #0ff; border: 1px solid #0ff;
+    font-family: 'Courier New', monospace; letter-spacing: 3px; transition: 0.2s;
+  }
+  #gameOverlay button:hover { background: rgba(0,255,255,0.15); }
+  #leaderboard {
+    position: fixed; top: 50px; right: 24px; z-index: 10;
+    color: #0ff; text-align: right; pointer-events: none;
+    font-size: 13px; text-shadow: 0 0 8px rgba(0,255,255,0.3);
+    font-family: 'Courier New', monospace; letter-spacing: 1px;
+  }
+  .lb-title { font-size: 15px; font-weight: bold; margin-bottom: 10px; letter-spacing: 3px; opacity: 0.6; }
+  .lb-entry { margin: 3px 0; }
+  .lb-entry.you { font-weight: bold; }
+  #finishLine {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    color: rgba(0,255,255,0.15); font-size: 120px; font-weight: bold;
+    pointer-events: none; z-index: 1; letter-spacing: 40px; opacity: 0;
+    transition: opacity 3s;
+  }
+  #finishLine.show { opacity: 1; }
+  #shopOverlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    display: none; z-index: 50; background: rgba(0,0,0,0.85);
+    justify-content: center; align-items: center;
+    font-family: 'Courier New', monospace;
+  }
+  #shopOverlay.open { display: flex; }
+  #shopPanel {
+    width: 800px; max-height: 80vh; background: rgba(0,10,20,0.95);
+    border: 1px solid rgba(0,255,255,0.3); border-radius: 8px;
+    padding: 20px; overflow-y: auto; position: relative;
+  }
+  #shopPanel::-webkit-scrollbar { width: 4px; }
+  #shopPanel::-webkit-scrollbar-thumb { background: rgba(0,255,255,0.3); }
+  .shop-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .shop-header h2 { color: #0ff; margin: 0; letter-spacing: 4px; }
+  .shop-bucks { color: #ffd700; font-size: 18px; letter-spacing: 1px; }
+  .shop-close { color: rgba(0,255,255,0.5); cursor: pointer; font-size: 20px; padding: 4px 12px; }
+  .shop-close:hover { color: #0ff; }
+  .ship-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .ship-card {
+    border: 1px solid rgba(0,255,255,0.15); border-radius: 6px;
+    padding: 12px; display: flex; gap: 10px;
+    background: rgba(0,255,255,0.03); position: relative;
+  }
+  .ship-card.owned { border-color: rgba(0,255,255,0.3); }
+  .ship-card.selected { border-color: #0ff; box-shadow: 0 0 15px rgba(0,255,255,0.2); }
+  .ship-card.locked { opacity: 0.5; }
+  .ship-color { width: 40px; height: 40px; border-radius: 4px; flex-shrink: 0; }
+  .ship-info { flex: 1; }
+  .ship-name { color: #fff; font-size: 14px; font-weight: bold; letter-spacing: 1px; }
+  .ship-desc { color: rgba(255,255,255,0.4); font-size: 11px; margin: 2px 0; }
+  .ship-stats { display: flex; gap: 12px; margin: 4px 0; font-size: 11px; color: rgba(255,255,255,0.5); }
+  .ship-stat span { color: #0ff; }
+  .ship-ability { font-size: 10px; color: #ffd700; letter-spacing: 1px; margin: 2px 0; }
+  .ship-price { font-size: 12px; color: #ffd700; margin: 2px 0; }
+  .ship-btn {
+    padding: 4px 14px; font-size: 11px; cursor: pointer; border-radius: 3px;
+    font-family: 'Courier New', monospace; letter-spacing: 1px;
+    background: transparent; color: #0ff; border: 1px solid #0ff;
+    position: absolute; bottom: 12px; right: 12px;
+  }
+  .ship-btn:hover { background: rgba(0,255,255,0.15); }
+  .ship-btn.bought { color: #0f0; border-color: #0f0; cursor: default; }
+  .ship-btn.equipped { color: #ffd700; border-color: #ffd700; cursor: default; }
+  #sBucksDisplay {
+    position: fixed; top: 20px; right: 150px; z-index: 11;
+    color: #ffd700; font-size: 16px; pointer-events: none;
+    text-shadow: 0 0 10px rgba(255,215,0,0.3);
+    font-family: 'Courier New', monospace; letter-spacing: 1px;
+  }
+  #shopBtn {
+    position: fixed; top: 20px; right: 20px; z-index: 11;
+    padding: 8px 18px; font-size: 13px; cursor: pointer;
+    background: rgba(0,255,255,0.08); color: #0ff; border: 1px solid rgba(0,255,255,0.3);
+    font-family: 'Courier New', monospace; letter-spacing: 2px; border-radius: 4px;
+  }
+  #shopBtn:hover { background: rgba(0,255,255,0.18); }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<div id="progressBar"><div id="progressFill"></div></div>
+<div id="regionLabels"></div>
+<div id="stormOverlay"></div>
+<div id="hyperspaceIndicator">HYPERSPACE</div>
+<div id="warpAlert">— WARP GATE DETECTED —</div>
+<div id="ui">
+  <div id="zoneName">— START ZONE —</div>
+  <div id="zoneDesc">DEPARTURE BAY · SAFE SECTOR</div>
+  <div id="speedDisplay">SPEED: 0</div>
+  <div id="controls">W/↑ THROTTLE · S/↓ BRAKE · A/D STEER · MOUSE AIM · CLICK TO LOCK</div>
+</div>
+<div id="zoneTransition"></div>
+<div id="gameOverlay"></div>
+<div id="leaderboard"><div class="lb-title">STANDINGS</div></div>
+<div id="finishLine">FINISH</div>
+<div id="sBucksDisplay">🪙 S Bucks: 0</div>
+<button id="shopBtn">SHOP</button>
+<div id="shopOverlay"><div id="shopPanel"></div></div>
+
+<script src="https://cdn.babylonjs.com/babylon.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('Space Voyage initializing...')
+  try {
+  const canvas = document.getElementById('gameCanvas')
+  const engine = new BABYLON.Engine(canvas, true)
+  const scene = new BABYLON.Scene(engine)
+  scene.clearColor = new BABYLON.Color4(0, 0, 0.02, 1)
+
+  // Fog
+  scene.fogMode = BABYLON.Scene.FOGMODE_EXP
+  scene.fogDensity = 0.0003
+  scene.fogColor = new BABYLON.Color3(0, 0, 0.02)
+
+  // Lights
+  const hemi = new BABYLON.HemisphericLight('hemi', new BABYLON.Vector3(0, 1, 0), scene)
+  hemi.intensity = 0.3
+  hemi.diffuse = new BABYLON.Color3(0.4, 0.5, 0.8)
+  const sun = new BABYLON.DirectionalLight('sun', new BABYLON.Vector3(1, -0.5, -2), scene)
+  sun.intensity = 0.6
+  sun.diffuse = new BABYLON.Color3(0.8, 0.85, 1)
+
+  // === ZONES ===
+  const ZONES = [
+    { name: 'START ZONE', zStart: 0, zEnd: 300, fog: new BABYLON.Color3(0, 0.02, 0.05), fogD: 0.0002, col: new BABYLON.Color3(0.2, 0.3, 0.8) },
+    { name: 'DEEP SPACE', zStart: 300, zEnd: 600, fog: new BABYLON.Color3(0.01, 0, 0.03), fogD: 0.00025, col: new BABYLON.Color3(0.3, 0.2, 0.6) },
+    { name: 'ASTEROID FIELD', zStart: 600, zEnd: 900, fog: new BABYLON.Color3(0.04, 0.02, 0), fogD: 0.00035, col: new BABYLON.Color3(0.6, 0.3, 0.1) },
+    { name: 'NEBULA', zStart: 900, zEnd: 1200, fog: new BABYLON.Color3(0.05, 0, 0.06), fogD: 0.0006, col: new BABYLON.Color3(0.7, 0.2, 0.7) },
+    { name: 'SHIP GRAVEYARD', zStart: 1200, zEnd: 1500, fog: new BABYLON.Color3(0.04, 0.01, 0.01), fogD: 0.0003, col: new BABYLON.Color3(0.5, 0.1, 0.1) },
+    { name: 'ALIEN RUINS', zStart: 1500, zEnd: 1800, fog: new BABYLON.Color3(0, 0.04, 0.03), fogD: 0.00025, col: new BABYLON.Color3(0.1, 0.6, 0.4) },
+    { name: 'COSMIC ANOMALY', zStart: 1800, zEnd: 2200, fog: new BABYLON.Color3(0.02, 0.02, 0.04), fogD: 0.0004, col: new BABYLON.Color3(0.4, 0.3, 0.9) },
+  ]
+  const TOTAL_LENGTH = ZONES[ZONES.length - 1].zEnd
+
+  // === SHIPS ===
+  const SHIPS = [
+    { id:'star-runner', name:'Star Runner', price:0, c:[0.6,0.65,0.7], g:[0.3,0.5,1], sp:0, han:7, acc:8, ab:'None', desc:'Your first ship. Balanced.' },
+    { id:'void-cruiser', name:'Void Cruiser', price:100, c:[0.3,0.2,0.5], g:[0.5,0.2,0.8], sp:2, han:6, acc:6, ab:'Shield', desc:'Survive one crash per race.' },
+    { id:'photon-dart', name:'Photon Dart', price:200, c:[0.9,0.8,0.1], g:[1,0.8,0.1], sp:5, han:5, acc:5, ab:'Turbo', desc:'+5 max speed.' },
+    { id:'nebula-glider', name:'Nebula Glider', price:250, c:[0.7,0.2,0.7], g:[0.8,0.2,0.9], sp:0, han:9, acc:9, ab:'Swift', desc:'+50% acceleration.' },
+    { id:'comet-tail', name:'Comet Tail', price:350, c:[1,0.5,0.1], g:[1,0.6,0.2], sp:4, han:6, acc:7, ab:'Drift', desc:'Tighter turns.' },
+    { id:'deep-space', name:'Deep Space', price:400, c:[0.15,0.15,0.3], g:[0.2,0.2,0.6], sp:3, han:8, acc:6, ab:'Shield', desc:'Survive one crash per race.' },
+    { id:'solar-blade', name:'Solar Blade', price:500, c:[0.9,0.2,0.05], g:[1,0.3,0.1], sp:6, han:4, acc:4, ab:'Turbo', desc:'+5 max speed.' },
+    { id:'quantum-wing', name:'Quantum Wing', price:550, c:[0.1,0.6,0.6], g:[0.1,0.8,0.8], sp:2, han:9, acc:8, ab:'Swift', desc:'+50% acceleration.' },
+    { id:'astroid-hauler', name:'Asteroid Hauler', price:600, c:[0.4,0.25,0.1], g:[0.5,0.3,0.1], sp:7, han:3, acc:3, ab:'Turbo', desc:'+5 max speed.' },
+    { id:'plasma-drive', name:'Plasma Drive', price:700, c:[0.2,0.8,0.2], g:[0.2,1,0.2], sp:4, han:7, acc:7, ab:'Drift', desc:'Tighter turns.' },
+    { id:'eclipse', name:'Eclipse', price:750, c:[0.2,0.15,0.3], g:[0.4,0.2,0.7], sp:3, han:8, acc:8, ab:'Shield', desc:'Survive one crash per race.' },
+    { id:'lightwave', name:'Lightwave', price:800, c:[0.6,0.6,0.9], g:[0.5,0.5,1], sp:8, han:4, acc:4, ab:'Turbo', desc:'+5 max speed.' },
+    { id:'infinity', name:'Infinity', price:900, c:[0.1,0.3,0.7], g:[0.2,0.4,0.9], sp:5, han:6, acc:7, ab:'Swift', desc:'+50% acceleration.' },
+    { id:'stardust', name:'Stardust', price:950, c:[0.8,0.7,0.9], g:[0.9,0.7,1], sp:1, han:10, acc:10, ab:'Drift', desc:'Tighter turns.' },
+    { id:'vortex', name:'Vortex', price:1000, c:[0.1,0.5,0.3], g:[0.1,0.7,0.4], sp:6, han:5, acc:5, ab:'Shield', desc:'Survive one crash per race.' },
+    { id:'dark-matter', name:'Dark Matter', price:1100, c:[0.1,0.05,0.15], g:[0.3,0.1,0.5], sp:5, han:7, acc:6, ab:'Turbo', desc:'+5 max speed.' },
+    { id:'supernova', name:'Supernova', price:1200, c:[1,0.6,0.05], g:[1,0.7,0.1], sp:9, han:3, acc:3, ab:'Swift', desc:'+50% acceleration.' },
+    { id:'galaxy-x', name:'Galaxy X', price:1400, c:[0.3,0.1,0.5], g:[0.5,0.1,0.8], sp:7, han:7, acc:7, ab:'Drift', desc:'Tighter turns.' },
+    { id:'black-hole', name:'Black Hole', price:1600, c:[0.05,0.02,0.08], g:[0.3,0.1,0.6], sp:8, han:5, acc:5, ab:'Shield', desc:'Survive one crash per race.' },
+    { id:'cosmic-wraith', name:'Cosmic Wraith', price:2000, c:[0.05,0.2,0.15], g:[0.1,0.8,0.5], sp:10, han:6, acc:6, ab:'Turbo', desc:'+5 max speed.' },
+  ]
+  let sBucks = parseInt(localStorage.getItem('svSBucks') || '0')
+  let ownedShips = JSON.parse(localStorage.getItem('svOwned') || '["star-runner"]')
+  let selectedShipId = localStorage.getItem('svSelected') || 'star-runner'
+  let shieldHP = 0
+
+  // === STARFIELD (small spheres - guaranteed compatible) ===
+  for (let i = 0; i < 600; i++) {
+    const radius = 500 + Math.random() * 1500
+    const theta = Math.random() * Math.PI * 2
+    const phi = Math.acos(2 * Math.random() - 1)
+    const star = BABYLON.MeshBuilder.CreateSphere('star' + i, { diameter: 0.15 + Math.random() * 0.3 }, scene)
+    star.position = new BABYLON.Vector3(
+      radius * Math.sin(phi) * Math.cos(theta),
+      radius * Math.cos(phi),
+      radius * Math.sin(phi) * Math.sin(theta) - 200
+    )
+    const sm = new BABYLON.StandardMaterial('sm' + i, scene)
+    const b = 0.6 + Math.random() * 0.4
+    sm.emissiveColor = new BABYLON.Color3(b * 0.9, b, b)
+    sm.disableLighting = true
+    star.material = sm
+  }
+
+  // Distant galaxy band
+  for (let i = 0; i < 300; i++) {
+    const t = Math.random() * Math.PI * 2
+    const r = 800 + Math.random() * 200
+    const spread = (Math.random() - 0.5) * 30
+    const gal = BABYLON.MeshBuilder.CreateSphere('gal' + i, { diameter: 0.4 + Math.random() * 0.6 }, scene)
+    gal.position = new BABYLON.Vector3(
+      r * Math.cos(t) + (Math.random() - 0.5) * 100,
+      spread,
+      r * Math.sin(t) - 300
+    )
+    const gm = new BABYLON.StandardMaterial('gm' + i, scene)
+    gm.emissiveColor = new BABYLON.Color3(0.4, 0.3, 0.6)
+    gm.disableLighting = true
+    gm.alpha = 0.5
+    gal.material = gm
+  }
+
+  // === ZONE GENERATORS ===
+  function generateStartZone() {
+    // Space station
+    const hubMat = new BABYLON.StandardMaterial('hubMat', scene)
+    hubMat.diffuseColor = new BABYLON.Color3(0.15, 0.2, 0.3)
+    hubMat.specularColor = new BABYLON.Color3(0.1, 0.15, 0.25)
+    hubMat.specularPower = 8
+    const hub = BABYLON.MeshBuilder.CreateCylinder('hub', { height: 8, diameterTop: 6, diameterBottom: 6 }, scene)
+    hub.position = new BABYLON.Vector3(0, 4, 80)
+    hub.material = hubMat
+
+    const ringMat = new BABYLON.StandardMaterial('ringMat1', scene)
+    ringMat.diffuseColor = new BABYLON.Color3(0.2, 0.3, 0.5)
+    ringMat.emissiveColor = new BABYLON.Color3(0.02, 0.05, 0.1)
+    for (let i = 0; i < 3; i++) {
+      const ring = BABYLON.MeshBuilder.CreateTorus('ring' + i, { diameter: 10 + i * 2, thickness: 0.3 }, scene)
+      ring.position = new BABYLON.Vector3(0, 4 + (i - 1) * 3, 80)
+      ring.rotation.x = Math.PI / 2
+      ring.material = ringMat
+    }
+
+    // Light panels on station
+    const panelMat = new BABYLON.StandardMaterial('panelMat', scene)
+    panelMat.diffuseColor = new BABYLON.Color3(0.05, 0.1, 0.2)
+    panelMat.emissiveColor = new BABYLON.Color3(0.2, 0.35, 0.5)
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2
+      const panel = BABYLON.MeshBuilder.CreateBox('panel' + i, { width: 0.3, height: 0.5, depth: 0.1 }, scene)
+      panel.position = new BABYLON.Vector3(Math.cos(angle) * 3.3, 1 + Math.random() * 6, 80 + Math.sin(angle) * 3.3)
+      panel.material = panelMat
+    }
+
+    // Dock platforms
+    const dockMat = new BABYLON.StandardMaterial('dockMat', scene)
+    dockMat.diffuseColor = new BABYLON.Color3(0.1, 0.12, 0.15)
+    dockMat.specularColor = new BABYLON.Color3(0.05, 0.08, 0.1)
+    for (let i = 0; i < 4; i++) {
+      const angle = (i / 4) * Math.PI * 2 + Math.PI / 4
+      const r = 7
+      const plat = BABYLON.MeshBuilder.CreateBox('dock' + i, { width: 3, height: 0.2, depth: 3 }, scene)
+      plat.position = new BABYLON.Vector3(Math.cos(angle) * r, 0.1, 80 + Math.sin(angle) * r)
+      plat.material = dockMat
+    }
+
+    // Runway lights (start markers)
+    const runwayMat = new BABYLON.StandardMaterial('runMat', scene)
+    runwayMat.emissiveColor = new BABYLON.Color3(0, 0.5, 0.8)
+    runwayMat.disableLighting = true
+    for (let i = 0; i < 20; i++) {
+      const l = BABYLON.MeshBuilder.CreateSphere('runL' + i, { diameter: 0.2 }, scene)
+      l.position = new BABYLON.Vector3((i % 2 === 0 ? -3 : 3), 0.1, i * 4 + 120)
+      l.material = runwayMat
+    }
+  }
+
+  function generateDeepSpace() {
+    // Drifting debris
+    const debrisMat = new BABYLON.StandardMaterial('debMat', scene)
+    debrisMat.diffuseColor = new BABYLON.Color3(0.08, 0.08, 0.1)
+    debrisMat.specularColor = new BABYLON.Color3(0.02, 0.02, 0.03)
+    for (let i = 0; i < 30; i++) {
+      const d = BABYLON.MeshBuilder.CreateBox('debris' + i, {
+        width: 0.3 + Math.random() * 0.5, height: 0.3 + Math.random() * 0.5, depth: 0.3 + Math.random() * 0.5,
+      }, scene)
+      d.position = new BABYLON.Vector3(
+        (Math.random() - 0.5) * 60, (Math.random() - 0.5) * 40, 350 + Math.random() * 200
+      )
+      d.rotation = new BABYLON.Vector3(Math.random() * 6, Math.random() * 6, Math.random() * 6)
+      d.material = debrisMat
+      obstacles.push({ mesh: d, radius: 1.2 })
+    }
+  }
+
+  function generateAsteroidField() {
+    const astColors = [
+      new BABYLON.Color3(0.5, 0.3, 0.15),
+      new BABYLON.Color3(0.4, 0.25, 0.12),
+      new BABYLON.Color3(0.35, 0.2, 0.1),
+      new BABYLON.Color3(0.45, 0.28, 0.18),
+      new BABYLON.Color3(0.3, 0.22, 0.15),
+    ]
+    for (let i = 0; i < 120; i++) {
+      const s = 0.5 + Math.random() * 3
+      const ast = BABYLON.MeshBuilder.CreateSphere('ast' + i, { diameter: s * 2 }, scene)
+      const z = 620 + Math.random() * 260
+      ast.position = new BABYLON.Vector3(
+        (Math.random() - 0.5) * 80, (Math.random() - 0.5) * 60, z
+      )
+      ast.rotation = new BABYLON.Vector3(Math.random() * 6, Math.random() * 6, Math.random() * 6)
+      const am = new BABYLON.StandardMaterial('am' + i, scene)
+      const c = astColors[i % astColors.length]
+      am.diffuseColor = c
+      am.emissiveColor = c.scale(0.15)
+      am.specularColor = new BABYLON.Color3(0.05, 0.03, 0.01)
+      ast.material = am
+      obstacles.push({ mesh: ast, radius: s })
+    }
+  }
+
+  function generateNebula() {
+    // Gas clouds
+    const cloudColors = [
+      new BABYLON.Color3(0.6, 0.2, 0.8), new BABYLON.Color3(0.3, 0.1, 0.6),
+      new BABYLON.Color3(0.7, 0.3, 0.9), new BABYLON.Color3(0.4, 0.1, 0.5),
+      new BABYLON.Color3(0.5, 0.15, 0.7),
+    ]
+    for (let i = 0; i < 15; i++) {
+      const cm = new BABYLON.StandardMaterial('cloudM' + i, scene)
+      const c = cloudColors[i % cloudColors.length]
+      cm.diffuseColor = c
+      cm.emissiveColor = c.scale(0.4)
+      cm.alpha = 0.08 + Math.random() * 0.1
+      cm.backFaceCulling = false
+      const cloud = BABYLON.MeshBuilder.CreateSphere('cloud' + i, { diameter: 30 + Math.random() * 50 }, scene)
+      cloud.position = new BABYLON.Vector3(
+        (Math.random() - 0.5) * 80, (Math.random() - 0.5) * 40, 950 + Math.random() * 200
+      )
+      cloud.scaling = new BABYLON.Vector3(1, 0.4 + Math.random() * 0.3, 1)
+      cloud.material = cm
+    }
+    // Glowing dust particles
+    const dustMat = new BABYLON.StandardMaterial('dustMat', scene)
+    dustMat.emissiveColor = new BABYLON.Color3(0.5, 0.2, 0.6)
+    dustMat.disableLighting = true
+    dustMat.alpha = 0.3
+    for (let i = 0; i < 200; i++) {
+      const d = BABYLON.MeshBuilder.CreateSphere('dust' + i, { diameter: 0.1 + Math.random() * 0.2 }, scene)
+      d.position = new BABYLON.Vector3(
+        (Math.random() - 0.5) * 100, (Math.random() - 0.5) * 80, 920 + Math.random() * 250
+      )
+      d.material = dustMat
+    }
+  }
+
+  function generateShipGraveyard() {
+    const hullMat = new BABYLON.StandardMaterial('hullMat', scene)
+    hullMat.diffuseColor = new BABYLON.Color3(0.06, 0.04, 0.03)
+    hullMat.specularColor = new BABYLON.Color3(0.02, 0.01, 0.01)
+    const wreckMat = new BABYLON.StandardMaterial('wreckMat', scene)
+    wreckMat.diffuseColor = new BABYLON.Color3(0.08, 0.05, 0.04)
+    wreckMat.specularColor = new BABYLON.Color3(0.01, 0.01, 0.01)
+
+    for (let i = 0; i < 20; i++) {
+      const z = 1250 + Math.random() * 220
+      const x = (Math.random() - 0.5) * 70
+      const y = (Math.random() - 0.5) * 50
+      const rot = new BABYLON.Vector3(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1)
+
+      // Hull
+      const hull = BABYLON.MeshBuilder.CreateCylinder('hull' + i, {
+        height: 2 + Math.random() * 4, diameterTop: 0.3 + Math.random() * 0.5, diameterBottom: 0.8 + Math.random() * 1.5,
+      }, scene)
+      hull.position = new BABYLON.Vector3(x, y + 0.5, z)
+      hull.rotation = rot
+      hull.material = i % 3 === 0 ? wreckMat : hullMat
+
+      // Wing fragments
+      for (let j = 0; j < 3; j++) {
+        const frag = BABYLON.MeshBuilder.CreateBox('frag' + i + '_' + j, {
+          width: 0.5 + Math.random(), height: 0.1 + Math.random() * 0.2, depth: 1 + Math.random() * 2,
+        }, scene)
+        frag.position = new BABYLON.Vector3(
+          x + (Math.random() - 0.5) * 3, y + (Math.random() - 0.5) * 2, z + (Math.random() - 0.5) * 3
+        )
+        frag.rotation = new BABYLON.Vector3(Math.random() * 3, Math.random() * 3, Math.random() * 3)
+        frag.material = hullMat
+      }
+    }
+
+    // Flickering emergency lights
+    const emMat = new BABYLON.StandardMaterial('emMat', scene)
+    emMat.emissiveColor = new BABYLON.Color3(0.8, 0.1, 0.05)
+    emMat.disableLighting = true
+    for (let i = 0; i < 15; i++) {
+      const el = BABYLON.MeshBuilder.CreateSphere('em' + i, { diameter: 0.15 }, scene)
+      el.position = new BABYLON.Vector3(
+        (Math.random() - 0.5) * 60, (Math.random() - 0.5) * 40, 1280 + Math.random() * 180
+      )
+      el.material = emMat
+    }
+  }
+
+  function generateAlienRuins() {
+    const ruinMat = new BABYLON.StandardMaterial('ruinMat', scene)
+    ruinMat.diffuseColor = new BABYLON.Color3(0.05, 0.12, 0.1)
+    ruinMat.specularColor = new BABYLON.Color3(0.02, 0.06, 0.04)
+    ruinMat.specularPower = 12
+    const glyphMat = new BABYLON.StandardMaterial('glyphMat', scene)
+    glyphMat.emissiveColor = new BABYLON.Color3(0.1, 0.6, 0.4)
+    glyphMat.disableLighting = true
+
+    // Obelisks
+    for (let i = 0; i < 8; i++) {
+      const z = 1550 + Math.random() * 220
+      const x = (Math.random() - 0.5) * 60
+      const ob = BABYLON.MeshBuilder.CreateBox('obelisk' + i, {
+        width: 0.5 + Math.random() * 0.8, height: 4 + Math.random() * 8, depth: 0.5 + Math.random() * 0.8,
+      }, scene)
+      ob.position = new BABYLON.Vector3(x, 2 + Math.random() * 2, z)
+      ob.rotation.y = Math.random() * 6
+      ob.material = ruinMat
+
+      // Glowing glyphs on obelisks
+      for (let j = 0; j < 3; j++) {
+        const g = BABYLON.MeshBuilder.CreateSphere('glyph' + i + '_' + j, { diameter: 0.2 }, scene)
+        g.position = new BABYLON.Vector3(x + (Math.random() - 0.5) * 0.5, 1 + Math.random() * 4, z + 0.5)
+        g.material = glyphMat
+      }
+    }
+
+    // Ring structures
+    const ringRuinsMat = new BABYLON.StandardMaterial('ringRMat', scene)
+    ringRuinsMat.diffuseColor = new BABYLON.Color3(0.08, 0.15, 0.12)
+    ringRuinsMat.emissiveColor = new BABYLON.Color3(0.02, 0.05, 0.03)
+    for (let i = 0; i < 4; i++) {
+      const z = 1550 + i * 50 + Math.random() * 20
+      const ring = BABYLON.MeshBuilder.CreateTorus('ruinRing' + i, { diameter: 8 + Math.random() * 4, thickness: 0.3 }, scene)
+      ring.position = new BABYLON.Vector3((Math.random() - 0.5) * 40, 3 + Math.random() * 3, z)
+      ring.rotation = new BABYLON.Vector3(Math.random() * 1.5, Math.random() * 6, Math.random() * 1.5)
+      ring.material = ringRuinsMat
+    }
+
+    // Floating energy orbs
+    const orbMat = new BABYLON.StandardMaterial('orbMat', scene)
+    orbMat.emissiveColor = new BABYLON.Color3(0.3, 0.8, 0.5)
+    orbMat.disableLighting = true
+    orbMat.alpha = 0.7
+    for (let i = 0; i < 12; i++) {
+      const o = BABYLON.MeshBuilder.CreateSphere('orb' + i, { diameter: 0.3 + Math.random() * 0.4 }, scene)
+      o.position = new BABYLON.Vector3(
+        (Math.random() - 0.5) * 50, 2 + Math.random() * 6, 1550 + Math.random() * 220
+      )
+      o.material = orbMat
+    }
+  }
+
+  function generateCosmicAnomaly() {
+    // Central singularity
+    const singMat = new BABYLON.StandardMaterial('singMat', scene)
+    singMat.emissiveColor = new BABYLON.Color3(0.3, 0.2, 0.8)
+    singMat.diffuseColor = new BABYLON.Color3(0.1, 0.05, 0.3)
+    singMat.specularColor = new BABYLON.Color3(0.5, 0.3, 1)
+    singMat.specularPower = 30
+    const sing = BABYLON.MeshBuilder.CreateSphere('singularity', { diameter: 12 }, scene)
+    sing.position = new BABYLON.Vector3(0, 0, 2000)
+    sing.material = singMat
+
+    // Accretion rings
+    const accMat = new BABYLON.StandardMaterial('accMat', scene)
+    accMat.emissiveColor = new BABYLON.Color3(0.4, 0.25, 0.8)
+    accMat.diffuseColor = new BABYLON.Color3(0.1, 0.05, 0.2)
+    accMat.alpha = 0.3
+    accMat.backFaceCulling = false
+    for (let i = 0; i < 5; i++) {
+      const ring = BABYLON.MeshBuilder.CreateTorus('acc' + i, { diameter: 16 + i * 4, thickness: 0.5 + i * 0.3 }, scene)
+      ring.position = new BABYLON.Vector3(0, 0, 2000)
+      ring.rotation.x = Math.PI / 3 + i * 0.15
+      ring.rotation.z = i * 0.3
+      ring.material = accMat
+    }
+
+    // Energy particles
+    const eMat = new BABYLON.StandardMaterial('eMat', scene)
+    eMat.emissiveColor = new BABYLON.Color3(0.5, 0.3, 1)
+    eMat.disableLighting = true
+    for (let i = 0; i < 80; i++) {
+      const ep = BABYLON.MeshBuilder.CreateSphere('ep' + i, { diameter: 0.1 + Math.random() * 0.2 }, scene)
+      const r = 8 + Math.random() * 12
+      const theta = Math.random() * Math.PI * 2
+      const phi = Math.acos(2 * Math.random() - 1)
+      ep.position = new BABYLON.Vector3(
+        r * Math.sin(phi) * Math.cos(theta),
+        r * Math.cos(phi),
+        2000 + r * Math.sin(phi) * Math.sin(theta)
+      )
+      ep.material = eMat
+    }
+
+    // Distant massive planets
+    const planMat = new BABYLON.StandardMaterial('planMat', scene)
+    planMat.diffuseColor = new BABYLON.Color3(0.1, 0.05, 0.2)
+    planMat.emissiveColor = new BABYLON.Color3(0.02, 0.01, 0.05)
+    for (let i = 0; i < 3; i++) {
+      const p = BABYLON.MeshBuilder.CreateSphere('planet' + i, { diameter: 30 + Math.random() * 20 }, scene)
+      p.position = new BABYLON.Vector3(
+        (Math.random() - 0.5) * 200, (Math.random() - 0.5) * 150, 1900 + Math.random() * 200
+      )
+      p.material = planMat
+    }
+  }
+
+  // === FINISH LINE (3D marker at z=2200) ===
+  const finishMat = new BABYLON.StandardMaterial('finishMat', scene)
+  finishMat.emissiveColor = new BABYLON.Color3(0, 0.8, 0.8)
+  finishMat.alpha = 0.3
+  finishMat.backFaceCulling = false
+  finishMat.disableLighting = true
+  for (let i = 0; i < 4; i++) {
+    const ring = BABYLON.MeshBuilder.CreateTorus('finishRing' + i, { diameter: 14 + i * 3, thickness: 0.2 }, scene)
+    ring.position = new BABYLON.Vector3(0, 0, TOTAL_LENGTH)
+    ring.rotation.x = Math.PI / 2
+    ring.rotation.z = i * Math.PI / 4
+    ring.material = finishMat
+  }
+
+  // === AI RACERS ===
+  const aiShips = []
+  const aiColors = [
+    '#ff2222','#22ff22','#2222ff','#ffff22','#ff8800',
+    '#ff22ff','#22ffff','#ff4488','#88ff44','#4488ff',
+    '#ffaa44','#aa44ff','#44ffaa',
+  ]
+  const aiNames = ['FIRE','NOVA','BLITZ','FLARE','EMBER','SHOCK','WAVE','STORM','FROST','SHADE','BOLT','RAGE','QUAKE']
+
+  function generateAIShips() {
+    for (let i = 0; i < 13; i++) {
+      const root = new BABYLON.TransformNode('aiShip' + i)
+      const z = 15 + i * 12
+      const offX = (i - 6) * 5
+      root.position = new BABYLON.Vector3(offX, 1.5 + Math.random(), z)
+
+      const hex = aiColors[i]
+      const col = new BABYLON.Color3(
+        parseInt(hex.slice(1,3),16)/255,
+        parseInt(hex.slice(3,5),16)/255,
+        parseInt(hex.slice(5,7),16)/255
+      )
+      const mat = new BABYLON.StandardMaterial('aiMat' + i, scene)
+      mat.diffuseColor = col
+      mat.specularColor = col.scale(0.3)
+      mat.specularPower = 10
+      const glowMat = new BABYLON.StandardMaterial('aiGlow' + i, scene)
+      glowMat.emissiveColor = col
+      glowMat.disableLighting = true
+
+      const fuse = BABYLON.MeshBuilder.CreateCylinder('aiFuse' + i, { height: 1.5, diameterTop: 0.05, diameterBottom: 0.3 }, scene)
+      fuse.parent = root; fuse.position.y = 0; fuse.rotation.x = Math.PI / 2
+      fuse.material = mat
+
+      for (const s of [-1, 1]) {
+        const w = BABYLON.MeshBuilder.CreateBox('aiWing' + i + '_' + s, { width: 0.05, height: 0.03, depth: 0.8 }, scene)
+        w.parent = root; w.position = new BABYLON.Vector3(s * 0.4, -0.05, 0.1)
+        w.material = mat
+        const e = BABYLON.MeshBuilder.CreateSphere('aiEng' + i + '_' + s, { diameter: 0.12 }, scene)
+        e.parent = root; e.position = new BABYLON.Vector3(s * 0.18, -0.05, 0.7)
+        e.material = glowMat
+      }
+      aiShips.push({
+        root, z, name: aiNames[i],
+        speed: 14 + Math.random() * 10,
+        offsetX: offX,
+        lateralPhase: Math.random() * 100,
+        finished: false, finishTime: 0,
+      })
+    }
+  }
+  generateAIShips()
+
+  // Obstacles for collision detection
+  const obstacles = []
+
+  // Generate all zones
+  generateStartZone()
+  generateDeepSpace()
+  generateAsteroidField()
+  generateNebula()
+  generateShipGraveyard()
+  generateAlienRuins()
+  generateCosmicAnomaly()
+
+  // Warp gate markers with animation data
+  const gateMat = new BABYLON.StandardMaterial('gateMat', scene)
+  gateMat.emissiveColor = new BABYLON.Color3(0, 0.5, 0.8)
+  gateMat.alpha = 0.4
+  gateMat.backFaceCulling = false
+  gateMat.disableLighting = true
+  const gates = []
+  for (let i = 1; i < ZONES.length; i++) {
+    const z = (ZONES[i - 1].zEnd + ZONES[i].zStart) / 2
+    for (let j = 0; j < 2; j++) {
+      const gate = BABYLON.MeshBuilder.CreateTorus('gate' + i + '_' + j, { diameter: 16, thickness: 0.3 }, scene)
+      gate.position = new BABYLON.Vector3((j === 0 ? -1 : 1) * 6, 0, z)
+      gate.rotation.x = Math.PI / 2
+      gate.material = gateMat
+      gates.push(gate)
+    }
+    // Gate glow pillars
+    const pillarGlow = new BABYLON.StandardMaterial('gateGlow' + i, scene)
+    pillarGlow.emissiveColor = new BABYLON.Color3(0, 0.4, 0.7)
+    pillarGlow.alpha = 0.2; pillarGlow.disableLighting = true; pillarGlow.backFaceCulling = false
+    for (let j = 0; j < 2; j++) {
+      const pillar = BABYLON.MeshBuilder.CreateCylinder('gatePillar' + i + '_' + j, { height: 10, diameter: 0.4 }, scene)
+      pillar.position = new BABYLON.Vector3((j === 0 ? -12 : 12), 5, z)
+      pillar.material = pillarGlow
+    }
+  }
+
+  // === SPACESHIP (built from selected ship config) ===
+  const ship = new BABYLON.TransformNode('ship')
+  ship.position = new BABYLON.Vector3(0, 1, 0)
+  let shipParts = []
+
+  function buildShip(shipId) {
+    shipParts.forEach(p => p.dispose())
+    shipParts = []
+    const cfg = SHIPS.find(s => s.id === shipId) || SHIPS[0]
+    const col = new BABYLON.Color3(cfg.c[0], cfg.c[1], cfg.c[2])
+    const gCol = new BABYLON.Color3(cfg.g[0], cfg.g[1], cfg.g[2])
+
+    const fusMat = new BABYLON.StandardMaterial('fusMat', scene)
+    fusMat.diffuseColor = col; fusMat.specularColor = col.scale(0.5); fusMat.specularPower = 15
+    const fuse = BABYLON.MeshBuilder.CreateCylinder('fuse', { height: 3, diameterTop: 0.1, diameterBottom: 0.6 }, scene)
+    fuse.parent = ship; fuse.position.y = 0; fuse.rotation.x = Math.PI / 2; fuse.material = fusMat
+    shipParts.push(fuse)
+
+    const cockMat = new BABYLON.StandardMaterial('cockMat', scene)
+    cockMat.diffuseColor = new BABYLON.Color3(0.2, 0.3, 0.5); cockMat.alpha = 0.6
+    const cock = BABYLON.MeshBuilder.CreateSphere('cockpit', { diameter: 0.5 }, scene)
+    cock.parent = ship; cock.position = new BABYLON.Vector3(0, 0.2, -1)
+    cock.scaling = new BABYLON.Vector3(0.8, 0.6, 0.8); cock.material = cockMat
+    shipParts.push(cock)
+
+    const wingMat = new BABYLON.StandardMaterial('wingMat', scene)
+    wingMat.diffuseColor = col.scale(0.85); wingMat.specularColor = col.scale(0.3)
+    for (const side of [-1, 1]) {
+      const w = BABYLON.MeshBuilder.CreateBox('wing' + side, { width: 0.1, height: 0.05, depth: 1.8 }, scene)
+      w.parent = ship; w.position = new BABYLON.Vector3(side * 0.8, -0.1, 0.3); w.material = wingMat
+      shipParts.push(w)
+    }
+
+    const engMat = new BABYLON.StandardMaterial('engMat', scene)
+    engMat.emissiveColor = gCol; engMat.disableLighting = true
+    for (const side of [-1, 1]) {
+      const e = BABYLON.MeshBuilder.CreateSphere('engine' + side, { diameter: 0.3 }, scene)
+      e.parent = ship; e.position = new BABYLON.Vector3(side * 0.35, -0.1, 1.5); e.material = engMat
+      shipParts.push(e)
+    }
+    shieldHP = cfg.ab === 'Shield' ? 1 : 0
+  }
+  buildShip(selectedShipId)
+
+  // === CAMERA ===
+  const camera = new BABYLON.UniversalCamera('cam', new BABYLON.Vector3(0, 3, 8), scene)
+  camera.fov = 1.0
+  camera.minZ = 0.1
+  camera.maxZ = 2000
+
+  // === INPUT ===
+  const keys = {}
+  window.addEventListener('keydown', (e) => { keys[e.key.toLowerCase()] = true })
+  window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false })
+
+  let pointerLocked = false
+  let mouseX = 0, mouseY = 0
+  canvas.addEventListener('click', () => { if (!pointerLocked) canvas.requestPointerLock() })
+  document.addEventListener('pointerlockchange', () => { pointerLocked = document.pointerLockElement === canvas })
+  document.addEventListener('mousemove', (e) => {
+    if (pointerLocked) {
+      mouseX += e.movementX * 0.002
+      mouseY += e.movementY * 0.002
+    }
+  })
+
+  // === GAME STATE ===
+  let speed = 0
+  const maxSpeed = 60
+  const accel = 28
+  const brake = 30
+  const friction = 6
+  const strafeSpeed = 14
+  const baseForwardSpeed = 12
+  let currentZone = 0
+  let gameState = 'playing'
+  let gameOverMessage = ''
+
+  // Storm system
+  let stormTimer = 5 + Math.random() * 10
+  let stormActive = false
+  let stormIntensity = 0
+  const stormZoneIndices = [1, 2, 3]
+
+  // Gate animation
+  let gatePhase = 0
+
+  // UI refs
+  const zoneNameEl = document.getElementById('zoneName')
+  const zoneDescEl = document.getElementById('zoneDesc')
+  const speedDisplayEl = document.getElementById('speedDisplay')
+  const progressFillEl = document.getElementById('progressFill')
+  const transitionEl = document.getElementById('zoneTransition')
+  const stormOverlayEl = document.getElementById('stormOverlay')
+  const hyperEl = document.getElementById('hyperspaceIndicator')
+  const warpAlertEl = document.getElementById('warpAlert')
+
+  const zoneDescs = [
+    'DEPARTURE BAY · SAFE SECTOR',
+    'INTERSTELLAR VOID · LONELY PASSAGE',
+    'DENSE DEBRIS FIELD · NAVIGATE WITH CAUTION',
+    'IONIZED GAS CLOUDS · REDUCED VISIBILITY',
+    'DERELICT FLEET · SILENT HAZARDS',
+    'ANCIENT MEGASTRUCTURES · UNKNOWN ENERGY',
+    'SPACETIME DISTORTION · APPROACHING SINGULARITY',
+  ]
+
+  // Region labels
+  const regionLabelsEl = document.getElementById('regionLabels')
+  ZONES.forEach((z, i) => {
+    const label = document.createElement('div')
+    label.className = 'region-label'
+    const pct = (z.zStart / TOTAL_LENGTH) * 100
+    label.style.left = pct + '%'
+    label.textContent = z.name.substring(0, 8)
+    regionLabelsEl.appendChild(label)
+  })
+
+  // === MAIN LOOP ===
+  scene.registerBeforeRender(() => {
+    const delta = Math.min(engine.getDeltaTime() / 1000, 0.05)
+
+    // === AI RACING (always updates, even after game over) ===
+    aiShips.forEach((ai) => {
+      if (!ai.finished) {
+        ai.z += ai.speed * delta
+        if (ai.z >= TOTAL_LENGTH) { ai.finished = true; ai.finishTime = performance.now() }
+        ai.root.position.z = ai.z
+        ai.root.position.x = ai.offsetX + Math.sin(ai.lateralPhase + ai.z * 0.005) * 12
+        ai.root.rotation.z = Math.sin(ai.lateralPhase + ai.z * 0.01) * 0.08
+        ai.root.rotation.y += Math.sin(ai.lateralPhase + ai.z * 0.008) * delta * 0.03
+      }
+    })
+
+    // === GAME STATE CHECK ===
+    if (gameState === 'gameover' || gameState === 'win') {
+      updateLeaderboard()
+      const zz = ship.position.z
+      document.querySelectorAll('.region-label').forEach((el, i) => {
+        el.classList.toggle('active', i === currentZone)
+      })
+      const progress = Math.min(100, (zz / TOTAL_LENGTH) * 100)
+      progressFillEl.style.width = progress + '%'
+      return
+    }
+
+    // Throttle (with ship ability modifiers)
+    const fwd = keys['w'] || keys['arrowup']
+    const rev = keys['s'] || keys['arrowdown']
+    const left = keys['a'] || keys['arrowleft']
+    const right = keys['d'] || keys['arrowright']
+    const shipCfg = SHIPS.find(s => s.id === selectedShipId) || SHIPS[0]
+    const bonusSpeed = shipCfg.ab === 'Turbo' ? 5 : 0
+    const accelMult = shipCfg.ab === 'Swift' ? 1.5 : 1
+    const driftMult = shipCfg.ab === 'Drift' ? 1.5 : 1
+
+    if (fwd) speed = Math.min(maxSpeed + bonusSpeed, speed + accel * accelMult * delta)
+    else if (rev) speed = Math.max(0, speed - brake * delta)
+    else speed = Math.max(0, speed - friction * delta)
+
+    // Forward progression (always moving forward in Z)
+    const finalSpeed = Math.max(baseForwardSpeed + bonusSpeed * 0.5, speed)
+    ship.position.z += finalSpeed * delta
+
+    // Steering (lateral + vertical offset)
+    const strafe = (right ? 1 : 0) - (left ? 1 : 0)
+    const steerTarget = strafe * 7 * driftMult
+    ship.position.x += (steerTarget - ship.position.x) * Math.min(1, delta * 2.5 * driftMult)
+
+    const vertTarget = -mouseY * 5
+    ship.position.y += (vertTarget - ship.position.y) * Math.min(1, delta * 2.5)
+
+    // Clamp position
+    ship.position.x = Math.max(-70, Math.min(70, ship.position.x))
+    ship.position.y = Math.max(-20, Math.min(30, ship.position.y))
+
+    // Ship visual orientation (bank/pitch based on controls)
+    const targetRoll = -strafe * 0.3
+    const targetPitch = -mouseY * 0.4
+    const targetYaw = strafe * 0.15
+    ship.rotation.z += (targetRoll - ship.rotation.z) * 0.06
+    ship.rotation.x += (targetPitch - ship.rotation.x) * 0.06
+    ship.rotation.y += (targetYaw - ship.rotation.y) * 0.06
+
+    // Mouse smoothing
+    mouseX *= 0.9
+    mouseY *= 0.92
+
+    // === COLLISION DETECTION ===
+    for (const obs of obstacles) {
+      const dist = BABYLON.Vector3.Distance(ship.position, obs.mesh.position)
+      if (dist < obs.radius + 1.5 && Math.abs(ship.position.z - obs.mesh.position.z) < 8) {
+        if (shieldHP > 0) {
+          shieldHP--
+          obs.mesh.position.y -= 20
+          continue
+        }
+        gameState = 'gameover'
+        gameOverMessage = 'CRASHED'
+        ship.position.z = Math.max(0, ship.position.z - 5)
+        showGameOver()
+        break
+      }
+    }
+
+    // === FINISH LINE ===
+    if (ship.position.z >= TOTAL_LENGTH) {
+      gameState = 'win'
+      gameOverMessage = 'YOU WIN!'
+      ship.position.z = TOTAL_LENGTH
+      document.getElementById('finishLine').classList.add('show')
+      showWin()
+    }
+
+    // === STORM SYSTEM ===
+    if (stormZoneIndices.includes(currentZone)) {
+      stormTimer -= delta
+      if (stormTimer <= 0) {
+        stormActive = !stormActive
+        stormTimer = stormActive ? 2 + Math.random() * 4 : 8 + Math.random() * 12
+      }
+      if (stormActive) {
+        stormIntensity = Math.min(1, stormIntensity + delta * 0.5)
+        const si = stormIntensity
+        scene.fogDensity += (0.001 * si - scene.fogDensity) * delta * 0.5
+        stormOverlayEl.style.opacity = si * 0.8
+        stormOverlayEl.style.background =
+          `radial-gradient(ellipse at center, transparent ${30 - si * 20}%, rgba(100,50,180,${0.2 + si * 0.3}))`
+        if (Math.random() < delta * si * 3) {
+          stormOverlayEl.style.opacity = (0.5 + Math.random() * 0.5) * si
+          setTimeout(() => { stormOverlayEl.style.opacity = si * 0.8 }, 50)
+        }
+      } else {
+        stormIntensity = Math.max(0, stormIntensity - delta * 0.3)
+        stormOverlayEl.style.opacity = stormIntensity * 0.8
+      }
+    } else {
+      stormActive = false
+      stormIntensity = Math.max(0, stormIntensity - delta * 0.5)
+      stormOverlayEl.style.opacity = stormIntensity * 0.8
+    }
+
+    // === WARP GATE ANIMATION ===
+    gatePhase += delta * 0.5
+    gates.forEach((gate, i) => {
+      gate.rotation.z = Math.sin(gatePhase + i) * 0.1
+      const scale = 1 + Math.sin(gatePhase * 2 + i * 0.5) * 0.05
+      gate.scaling = new BABYLON.Vector3(scale, scale, scale)
+    })
+
+    // Check proximity to warp gates
+    let nearGate = false
+    for (let i = 1; i < ZONES.length; i++) {
+      const gz = (ZONES[i - 1].zEnd + ZONES[i].zStart) / 2
+      if (Math.abs(ship.position.z - gz) < 15) {
+        nearGate = true
+        const dist = Math.abs(ship.position.z - gz)
+        const intensity = Math.max(0, 1 - dist / 15)
+        warpAlertEl.style.opacity = intensity
+        warpAlertEl.textContent = '— ' + ZONES[i].name + ' GATE —'
+        gateMat.emissiveColor = new BABYLON.Color3(intensity * 0.5, 0.5 + intensity * 0.3, 0.8 + intensity * 0.2)
+        break
+      }
+    }
+    if (!nearGate) warpAlertEl.style.opacity = Math.max(0, warpAlertEl.style.opacity - delta * 2)
+
+    // === CAMERA ===
+    const camDist = 10 - Math.min(4, speed / maxSpeed * 3)
+    const camHeight = 3 + Math.min(1, speed / maxSpeed * 0.5)
+    const camPos = new BABYLON.Vector3(
+      ship.position.x * 0.3,
+      ship.position.y + camHeight,
+      ship.position.z - camDist
+    )
+    camera.position = BABYLON.Vector3.Lerp(camera.position, camPos, 0.06)
+    camera.setTarget(new BABYLON.Vector3(
+      ship.position.x * 0.6,
+      ship.position.y + 1.5,
+      ship.position.z + 15
+    ))
+
+    // === ZONE DETECTION ===
+    const z = ship.position.z
+    let newZone = 0
+    for (let i = 0; i < ZONES.length; i++) {
+      if (z >= ZONES[i].zStart && z < ZONES[i].zEnd) { newZone = i; break }
+      if (z >= ZONES[ZONES.length - 1].zEnd) newZone = ZONES.length - 1
+    }
+    if (newZone !== currentZone) {
+      currentZone = newZone
+      transitionEl.classList.add('active')
+      setTimeout(() => transitionEl.classList.remove('active'), 800)
+    }
+
+    // === ZONE VISUALS ===
+    const zone = ZONES[Math.min(currentZone, ZONES.length - 1)]
+    scene.fogColor = BABYLON.Color3.Lerp(scene.fogColor, zone.fog, delta)
+    if (!stormActive) scene.fogDensity += (zone.fogD - scene.fogDensity) * delta * 2
+    hemi.diffuse = BABYLON.Color3.Lerp(hemi.diffuse, zone.col, delta)
+
+    // Hyperspace effect at max speed
+    if (speed > maxSpeed * 0.85) {
+      hyperEl.classList.add('active')
+      hyperEl.style.opacity = ((speed - maxSpeed * 0.85) / (maxSpeed * 0.15)) * 0.08
+    } else {
+      hyperEl.classList.remove('active')
+      hyperEl.style.opacity = 0
+    }
+
+    // === UI ===
+    zoneNameEl.textContent = '— ' + zone.name + ' —'
+    zoneDescEl.textContent = zoneDescs[currentZone] || ''
+    const displaySpeed = Math.round(speed * 2)
+    speedDisplayEl.textContent = 'SPEED: ' + displaySpeed + (speed > maxSpeed * 0.9 ? ' ⚡ HYPERSPACE' : '')
+    const progress = Math.min(100, (z / TOTAL_LENGTH) * 100)
+    progressFillEl.style.width = progress + '%'
+
+    // Highlight current zone on progress bar
+    document.querySelectorAll('.region-label').forEach((el, i) => {
+      el.classList.toggle('active', i === currentZone)
+    })
+
+    // === LEADERBOARD ===
+    updateLeaderboard()
+  })
+
+  // === GAME OVER / WIN ===
+  // === SHOP FUNCTIONS ===
+  function openShop() {
+    const shipCfg = SHIPS.find(s => s.id === selectedShipId) || SHIPS[0]
+    document.getElementById('shopOverlay').classList.add('open')
+    renderShop()
+  }
+  function closeShop() { document.getElementById('shopOverlay').classList.remove('open') }
+
+  function renderShop() {
+    const panel = document.getElementById('shopPanel')
+    let html = `<div class="shop-header">
+      <h2>⚡ SHIPYARD</h2>
+      <div class="shop-bucks">🪙 ${sBucks} S Bucks</div>
+      <div class="shop-close" onclick="(function(){document.getElementById('shopOverlay').classList.remove('open')})()">✕</div>
+    </div><div class="ship-grid">`
+    for (const s of SHIPS) {
+      const own = ownedShips.includes(s.id)
+      const sel = s.id === selectedShipId
+      const canBuy = sBucks >= s.price
+      const cls = own ? (sel ? 'selected' : 'owned') : (canBuy ? '' : 'locked')
+      const col = `rgb(${s.c[0]*255|0},${s.c[1]*255|0},${s.c[2]*255|0})`
+      const btnHtml = sel ? '<button class="ship-btn equipped">EQUIPPED</button>'
+        : own ? `<button class="ship-btn" onclick="selectShip('${s.id}')">SELECT</button>`
+        : canBuy ? `<button class="ship-btn" onclick="buyShip('${s.id}')">BUY ${s.price}🪙</button>`
+        : '<button class="ship-btn" style="opacity:0.3">LOCKED</button>'
+      html += `<div class="ship-card ${cls}">
+        <div class="ship-color" style="background:${col}"></div>
+        <div class="ship-info">
+          <div class="ship-name">${s.name}</div>
+          <div class="ship-desc">${s.desc}</div>
+          <div class="ship-stats">
+            <span>SPD <span>+${s.sp}</span></span>
+            <span>HAN <span>${s.han}</span></span>
+            <span>ACC <span>${s.acc}</span></span>
+          </div>
+          <div class="ship-ability">★ ${s.ab}</div>
+        </div>
+        ${btnHtml}
+      </div>`
+    }
+    html += '</div>'
+    panel.innerHTML = html
+  }
+
+  window.buyShip = function(id) {
+    const s = SHIPS.find(x => x.id === id)
+    if (!s || ownedShips.includes(id) || sBucks < s.price) return
+    sBucks -= s.price
+    ownedShips.push(id)
+    localStorage.setItem('svSBucks', sBucks)
+    localStorage.setItem('svOwned', JSON.stringify(ownedShips))
+    renderShop()
+    updateSBucks()
+  }
+
+  window.selectShip = function(id) {
+    if (!ownedShips.includes(id)) return
+    selectedShipId = id
+    localStorage.setItem('svSelected', id)
+    buildShip(id)
+    closeShop()
+    updateSBucks()
+  }
+
+  function updateSBucks() {
+    const el = document.getElementById('sBucksDisplay')
+    if (el) el.textContent = '🪙 S Bucks: ' + sBucks
+  }
+
+  // Shop button
+  document.getElementById('shopBtn').addEventListener('click', openShop)
+
+  function showGameOver() {
+    const overlay = document.getElementById('gameOverlay')
+    const pos = getPlayerPosition()
+    overlay.style.display = 'flex'
+    overlay.innerHTML = `
+      <h1 style="color:#f44">GAME OVER</h1>
+      <div class="sub">${gameOverMessage}</div>
+      <div class="finish-pos">You placed #${pos} of 14</div>
+      <button onclick="location.reload()">RESTART</button>
+    `
+  }
+
+  function showWin() {
+    const overlay = document.getElementById('gameOverlay')
+    const pos = getPlayerPosition()
+    sBucks += 50
+    localStorage.setItem('svSBucks', sBucks)
+    updateSBucks()
+    overlay.style.display = 'flex'
+    overlay.innerHTML = `
+      <h1 style="color:#0ff">YOU WIN!</h1>
+      <div class="sub">Race Complete</div>
+      <div class="finish-pos">You placed #${pos} of 14</div>
+      <div style="color:#ffd700;font-size:22px;margin:8px 0">+50 🪙 S Bucks</div>
+      <button onclick="location.reload()">RESTART</button>
+    `
+  }
+
+  function getPlayerPosition() {
+    let count = 1
+    for (const ai of aiShips) {
+      if (ai.z > ship.position.z || (ai.finished && gameState === 'win')) count++
+    }
+    return count
+  }
+
+  function updateLeaderboard() {
+    const sorted = [...aiShips].sort((a, b) => b.z - a.z)
+    const lb = document.getElementById('leaderboard')
+    lb.innerHTML = '<div class="lb-title">STANDINGS</div>'
+    let rank = 1
+    for (const ai of sorted) {
+      const hex = aiColors[aiShips.indexOf(ai)]
+      const done = ai.finished ? ' ✓' : ''
+      lb.innerHTML += `<div class="lb-entry" style="color:${hex}">${rank}. ${ai.name}${done}</div>`
+      rank++
+    }
+    const playerRank = getPlayerPosition()
+    lb.innerHTML += `<div class="lb-entry you" style="color:#0ff">${playerRank}. YOU</div>`
+  }
+
+  // Initial S Bucks display
+  updateSBucks()
+
+  // === RENDER LOOP ===
+  engine.runRenderLoop(() => scene.render())
+  window.addEventListener('resize', () => engine.resize())
+  console.log('Space Voyage initialized successfully')
+  } catch (e) {
+    console.error('Space Voyage error:', e.message, e.stack)
+    document.body.innerHTML = '<pre style="color:red;padding:20px;font-size:18px">ERROR: ' + e.message + '</pre>'
+  }
+})
+</script>
+</body>
+</html>
