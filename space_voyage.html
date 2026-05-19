@@ -159,6 +159,43 @@
     font-family: 'Courier New', monospace; letter-spacing: 2px; border-radius: 4px;
   }
   #shopBtn:hover { background: rgba(0,255,255,0.18); }
+  #turboBar {
+    position: fixed; bottom: 130px; left: 50%; transform: translateX(-50%);
+    width: 200px; height: 8px; background: rgba(0,0,0,0.6); border-radius: 4px;
+    z-index: 10; border: 1px solid rgba(0,255,255,0.2); overflow: hidden;
+  }
+  #turboFill {
+    height: 100%; width: 0%; background: linear-gradient(90deg, #0ff, #ff0, #f44);
+    border-radius: 3px; transition: width 0.05s;
+  }
+  #comboDisplay {
+    position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+    color: #ffd700; font-family: 'Courier New', monospace; font-size: 28px;
+    font-weight: bold; z-index: 10; pointer-events: none;
+    text-shadow: 0 0 20px rgba(255,215,0,0.5); letter-spacing: 3px;
+    opacity: 0; transition: opacity 0.2s;
+  }
+  #comboDisplay.show { opacity: 1; }
+  #scoreDisplay {
+    position: fixed; top: 50px; right: 180px; z-index: 11;
+    color: #fff; font-size: 14px; pointer-events: none;
+    font-family: 'Courier New', monospace; letter-spacing: 1px;
+    text-shadow: 0 0 8px rgba(255,255,255,0.2);
+  }
+  #bossHpBar {
+    position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+    width: 300px; height: 12px; background: rgba(0,0,0,0.7); border-radius: 6px;
+    z-index: 10; border: 2px solid rgba(255,0,0,0.5); display: none; overflow: hidden;
+  }
+  #bossHpFill {
+    height: 100%; width: 100%; background: linear-gradient(90deg, #f00, #f80);
+    border-radius: 4px; transition: width 0.1s;
+  }
+  #bossLabel {
+    position: fixed; top: 65px; left: 50%; transform: translateX(-50%);
+    color: #f44; font-size: 14px; font-family: 'Courier New', monospace;
+    z-index: 10; display: none; letter-spacing: 3px; text-shadow: 0 0 15px rgba(255,0,0,0.3);
+  }
 </style>
 </head>
 <body>
@@ -171,9 +208,14 @@
 <div id="ui">
   <div id="zoneName">— START ZONE —</div>
   <div id="zoneDesc">DEPARTURE BAY · SAFE SECTOR</div>
-  <div id="speedDisplay">SPEED: 0</div>
-  <div id="controls">W/↑ THROTTLE · S/↓ BRAKE · A/D STEER · MOUSE AIM · CLICK TO LOCK</div>
+  <div id="speedDisplay">SPEED: 0  ◆ 0</div>
+  <div id="controls">W/↑ THROTTLE · S/↓ BRAKE · A/D STEER · SHIFT DRIFT · SPACE TURBO · MOUSE AIM · CLICK TO LOCK</div>
 </div>
+<div id="turboBar"><div id="turboFill"></div></div>
+<div id="comboDisplay">x2</div>
+<div id="scoreDisplay">SCORE: 0</div>
+<div id="bossHpBar"><div id="bossHpFill"></div></div>
+<div id="bossLabel">⚠ BOSS</div>
 <div id="zoneTransition"></div>
 <div id="gameOverlay"></div>
 <div id="leaderboard"><div class="lb-title">STANDINGS</div></div>
@@ -804,6 +846,20 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentZone = 0
   let gameState = 'playing'
   let gameOverMessage = ''
+  let turboMeter = 0
+  const maxTurbo = 100
+  let comboCount = 0
+  let comboTimer = 0
+  let nearMissStreak = 0
+  let score = 0
+  let scoreMult = 1
+  let inSlipstream = false
+  let driftActive = false
+  let driftCharge = 0
+  let bossHP = 0
+  let bossMaxHP = 20
+  let bossAlive = false
+  let bossProjectiles = []
 
   // Storm system
   let stormTimer = 5 + Math.random() * 10
@@ -891,6 +947,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const rev = keys['s'] || keys['arrowdown']
     const left = keys['a'] || keys['arrowleft']
     const right = keys['d'] || keys['arrowright']
+    const shift = keys['shift']
+    const space = keys[' ']
     const shipCfg = SHIPS.find(s => s.id === selectedShipId) || SHIPS[0]
     const bonusSpeed = shipCfg.ab === 'Turbo' ? 5 : 0
     const accelMult = shipCfg.ab === 'Swift' ? 1.5 : 1
@@ -901,13 +959,57 @@ document.addEventListener('DOMContentLoaded', () => {
     else speed = Math.max(0, speed - friction * delta)
 
     // Forward progression (always moving forward in Z)
-    const finalSpeed = Math.max(baseForwardSpeed + bonusSpeed * 0.5, speed)
+    let finalSpeed = Math.max(baseForwardSpeed + bonusSpeed * 0.5, speed)
+
+    // Slipstream (speed bonus behind AI ships)
+    inSlipstream = false
+    for (const ai of aiShips) {
+      const dz = ai.z - ship.position.z
+      const dx = Math.abs(ai.root.position.x - ship.position.x)
+      if (dz > 0 && dz < 10 && dx < 5) {
+        inSlipstream = true
+        finalSpeed += 8
+        break
+      }
+    }
+
+    // Drift mechanic
+    const isTurning = left || right
+    if (shift && isTurning && Math.abs(speed) > 10 && racePhase === 'racing') {
+      if (!driftActive) {
+        driftActive = true
+        driftCharge = 0
+      }
+      driftCharge = Math.min(100, driftCharge + delta * 30)
+    } else {
+      if (driftActive) {
+        if (driftCharge > 15) {
+          const boostPower = 8 + driftCharge * 0.3
+          speed += boostPower
+          turboMeter = Math.min(maxTurbo, turboMeter + driftCharge * 0.2)
+        }
+        driftActive = false
+        driftCharge = 0
+      }
+    }
+
+    // Turbo burst on space
+    const turboPressed = space && !turboUsed
+    let turboUsed = false
+    if (turboPressed && turboMeter >= maxTurbo) {
+      speed += 50
+      turboMeter = 0
+      turboUsed = true
+      shakeAmount = 0.3
+    }
+
     ship.position.z += finalSpeed * delta
 
     // Steering (lateral + vertical offset)
+    const driftSteerScale = driftActive ? 1.6 : 1
     const strafe = (right ? 1 : 0) - (left ? 1 : 0)
-    const steerTarget = strafe * 7 * driftMult
-    ship.position.x += (steerTarget - ship.position.x) * Math.min(1, delta * 2.5 * driftMult)
+    const steerTarget = strafe * 7 * driftMult * driftSteerScale
+    ship.position.x += (steerTarget - ship.position.x) * Math.min(1, delta * 2.5 * driftMult * driftSteerScale)
 
     const vertTarget = -mouseY * 5
     ship.position.y += (vertTarget - ship.position.y) * Math.min(1, delta * 2.5)
@@ -917,9 +1019,9 @@ document.addEventListener('DOMContentLoaded', () => {
     ship.position.y = Math.max(-20, Math.min(30, ship.position.y))
 
     // Ship visual orientation (bank/pitch based on controls)
-    const targetRoll = -strafe * 0.3
+    const targetRoll = -strafe * (driftActive ? 0.5 : 0.3)
     const targetPitch = -mouseY * 0.4
-    const targetYaw = strafe * 0.15
+    const targetYaw = strafe * (driftActive ? 0.3 : 0.15)
     ship.rotation.z += (targetRoll - ship.rotation.z) * 0.06
     ship.rotation.x += (targetPitch - ship.rotation.x) * 0.06
     ship.rotation.y += (targetYaw - ship.rotation.y) * 0.06
@@ -988,6 +1090,29 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    // === NEAR-MISS COMBO ===
+    if (racePhase === 'racing') {
+      let nearMiss = false
+      for (const obs of obstacles) {
+        const d = BABYLON.Vector3.Distance(ship.position, obs.mesh.position)
+        if (d < obs.radius + 3.5 && d >= obs.radius + 1.5 && Math.abs(ship.position.z - obs.mesh.position.z) < 6) {
+          nearMiss = true
+          break
+        }
+      }
+      if (nearMiss) {
+        comboCount++
+        comboTimer = 0.5
+        nearMissStreak++
+        score += 10 * Math.min(comboCount, 5)
+        if (comboCount % 3 === 0) turboMeter = Math.min(maxTurbo, turboMeter + 10)
+        if (comboCount > 1 && comboCount % 5 === 0) speed += 5
+      } else {
+        comboTimer -= delta
+        if (comboTimer <= 0) { comboCount = 0; nearMissStreak = 0 }
+      }
+    }
+
     // === ORB COLLECTION ===
     if (racePhase === 'racing') {
       for (let i = orbs.length - 1; i >= 0; i--) {
@@ -1013,6 +1138,93 @@ document.addEventListener('DOMContentLoaded', () => {
           speed = Math.min(maxSpeed * 1.3, speed + 40)
           bpMat.emissiveColor = new BABYLON.Color3(1, 1, 1)
           setTimeout(() => { bpMat.emissiveColor = new BABYLON.Color3(0, 0.5, 1) }, 100)
+        }
+      }
+    }
+
+    // === JUMP PADS ===
+    if (racePhase === 'racing') {
+      for (const jp of jumpPads) {
+        const d = BABYLON.Vector3.Distance(ship.position, jp.position)
+        if (d < 2 && Math.abs(ship.position.z - jp.position.z) < 3) {
+          ship.position.y += 8
+          speed += 10
+          jpMat.emissiveColor = new BABYLON.Color3(0, 1, 1)
+          setTimeout(() => { jpMat.emissiveColor = new BABYLON.Color3(0, 1, 0.5) }, 150)
+        }
+      }
+    }
+
+    // === SKILL RINGS ===
+    skillRings.forEach((sr) => {
+      if (sr.collected) return
+      sr.mesh.rotation.z += delta * 2
+      const d = BABYLON.Vector3.Distance(ship.position, sr.mesh.position)
+      if (d < 2.5) {
+        sr.collected = true
+        sr.mesh.setEnabled(false)
+        score += 50 * Math.min(comboCount + 1, 10)
+        turboMeter = Math.min(maxTurbo, turboMeter + 5)
+        playCollect()
+      }
+    })
+
+    // === BOSS ===
+    if (ship.position.z > 1900 && !bossAlive) {
+      bossAlive = true
+      bossRoot.setEnabled(true)
+      document.getElementById('bossHpBar').style.display = 'block'
+      document.getElementById('bossLabel').style.display = 'block'
+    }
+    if (bossAlive) {
+      bossRoot.rotation.y += delta * 0.5
+      bossRoot.position.y = 5 + Math.sin(animTime * 0.5) * 2
+      // Boss fires projectiles
+      if (Math.random() < delta * 0.3) {
+        const dir = ship.position.subtract(bossRoot.position).normalize()
+        const bp = BABYLON.MeshBuilder.CreateSphere('bossProj' + bossProjectiles.length, { diameter: 0.5 }, scene)
+        bp.position = bossRoot.position.clone()
+        const bpm = new BABYLON.StandardMaterial('bpm' + bossProjectiles.length, scene)
+        bpm.emissiveColor = new BABYLON.Color3(1, 0.2, 0.3)
+        bpm.disableLighting = true
+        bp.material = bpm
+        bossProjectiles.push({ mesh: bp, dir, life: 5 })
+        obstacles.push({ mesh: bp, radius: 0.8 })
+      }
+      // Move boss projectiles
+      for (let i = bossProjectiles.length - 1; i >= 0; i--) {
+        const bp = bossProjectiles[i]
+        bp.mesh.position.addInPlace(bp.dir.scale(delta * 20))
+        bp.life -= delta
+        if (bp.life <= 0 || bp.mesh.position.z > TOTAL_LENGTH + 50) {
+          bp.mesh.dispose()
+          bossProjectiles.splice(i, 1)
+        }
+      }
+      // Boss takes damage from near-misses
+      if (nearMissStreak > 0 && Math.random() < delta * nearMissStreak * 0.02) {
+        bossHP--
+        document.getElementById('bossHpFill').style.width = (bossHP / bossMaxHP * 100) + '%'
+        if (bossHP <= 0) {
+          bossAlive = false
+          bossRoot.setEnabled(false)
+          document.getElementById('bossHpBar').style.display = 'none'
+          document.getElementById('bossLabel').style.display = 'none'
+          score += 500
+          sBucks += 100
+          updateSBucks()
+          playWinSound()
+          // Explosion particles
+          for (let i = 0; i < 30; i++) {
+            const exp = BABYLON.MeshBuilder.CreateSphere('exp' + i, { diameter: 0.3 }, scene)
+            exp.position = bossRoot.position.clone()
+            const em = new BABYLON.StandardMaterial('em', scene)
+            em.emissiveColor = new BABYLON.Color3(1, Math.random() * 0.5, 0)
+            em.disableLighting = true
+            exp.material = em
+            const exd = new BABYLON.Vector3((Math.random() - 0.5) * 2, Math.random() * 2, (Math.random() - 0.5) * 2)
+            setTimeout(() => { exp.dispose() }, 1000)
+          }
         }
       }
     }
@@ -1191,6 +1403,21 @@ document.addEventListener('DOMContentLoaded', () => {
     speedDisplayEl.textContent = 'SPEED: ' + displaySpeed + (speed > maxSpeed * 0.9 ? ' ⚡ HYPERSPACE' : '') + '  ◆ ' + orbsCollected
     const progress = Math.min(100, (z / TOTAL_LENGTH) * 100)
     progressFillEl.style.width = progress + '%'
+
+    // Turbo bar
+    document.getElementById('turboFill').style.width = (turboMeter / maxTurbo * 100) + '%'
+
+    // Combo display
+    const comboEl = document.getElementById('comboDisplay')
+    if (comboCount > 1) {
+      comboEl.textContent = comboCount + 'x NEAR-MISS!'
+      comboEl.classList.add('show')
+    } else {
+      comboEl.classList.remove('show')
+    }
+
+    // Score display
+    document.getElementById('scoreDisplay').textContent = 'SCORE: ' + score
 
     // Highlight current zone on progress bar
     document.querySelectorAll('.region-label').forEach((el, i) => {
@@ -1449,6 +1676,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Animated time
   let animTime = 0
+
+  // Jump pads
+  const jumpPads = []
+  const jpMat = new BABYLON.StandardMaterial('jpMat', scene)
+  jpMat.emissiveColor = new BABYLON.Color3(0, 1, 0.5)
+  jpMat.diffuseColor = new BABYLON.Color3(0, 0.3, 0.2)
+  jpMat.disableLighting = true
+  for (let i = 0; i < 15; i++) {
+    const jp = BABYLON.MeshBuilder.CreateCylinder('jp' + i, { height: 0.2, diameter: 2 }, scene)
+    jp.position = new BABYLON.Vector3(
+      (Math.random() - 0.5) * 35, 0.05,
+      200 + (i / 15) * (TOTAL_LENGTH - 400)
+    )
+    jp.material = jpMat
+    jumpPads.push(jp)
+  }
+
+  // Floating skill rings
+  const skillRings = []
+  const srMat = new BABYLON.StandardMaterial('srMat', scene)
+  srMat.emissiveColor = new BABYLON.Color3(0, 0.8, 1)
+  srMat.alpha = 0.3
+  srMat.backFaceCulling = false
+  srMat.disableLighting = true
+  for (let i = 0; i < 20; i++) {
+    const sr = BABYLON.MeshBuilder.CreateTorus('sr' + i, { diameter: 3, thickness: 0.1 }, scene)
+    sr.position = new BABYLON.Vector3(
+      (Math.random() - 0.5) * 40, 2 + Math.random() * 5,
+      100 + (i / 20) * (TOTAL_LENGTH - 200)
+    )
+    sr.rotation.x = Math.PI / 2
+    sr.material = srMat
+    skillRings.push({ mesh: sr, collected: false, phase: Math.random() * 6 })
+  }
+
+  // Boss at anomaly
+  const bossMat = new BABYLON.StandardMaterial('bossMat', scene)
+  bossMat.emissiveColor = new BABYLON.Color3(0.8, 0.1, 0.2)
+  bossMat.diffuseColor = new BABYLON.Color3(0.4, 0.05, 0.1)
+  bossMat.disableLighting = true
+  const bossRoot = new BABYLON.TransformNode('boss')
+  bossRoot.position = new BABYLON.Vector3(0, 5, 1950)
+  const bossCore = BABYLON.MeshBuilder.CreateSphere('bossCore', { diameter: 3 }, scene)
+  bossCore.parent = bossRoot
+  bossCore.material = bossMat
+  for (let i = 0; i < 4; i++) {
+    const arm = BABYLON.MeshBuilder.CreateCylinder('bossArm' + i, { height: 4, diameter: 0.3 }, scene)
+    arm.parent = bossRoot
+    arm.position = new BABYLON.Vector3(
+      Math.cos(i * Math.PI / 2) * 2.5,
+      0,
+      Math.sin(i * Math.PI / 2) * 2.5
+    )
+    arm.rotation.z = Math.PI / 4
+    arm.material = bossMat
+  }
+  bossRoot.setEnabled(false)
+  bossHP = bossMaxHP
 
   // === RENDER LOOP ===
   engine.runRenderLoop(() => scene.render())
